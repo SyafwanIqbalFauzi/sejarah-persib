@@ -1,0 +1,19 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme static {
+  --font-sans: 'Public Sans', sans-serif;
+
+  /* Persib navy blue — sampled from jersey home identity (PRD section 7.2) */
+  --color-persib-blue-50: #f2f5fc;
+  --color-persib-blue-100: #e2e8f9;
+  --color-persib-blue-200: #c0cdf1;
+  --color-persib-blue-300: #92a8e7;
+  --color-persib-blue-400: #5779db;
+  --color-persib-blue-500: #1f3c8e;
+  --color-persib-blue-600: #1a3175;
+  --color-persib-blue-700: #152860;
+  --color-persib-blue-800: #112150;
+  --color-persib-blue-900: #0f1c43;
+  --color-persib-blue-950: #09122a;
+}
