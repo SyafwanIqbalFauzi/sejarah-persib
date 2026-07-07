@@ -1,0 +1,24 @@
+# Env
+.env
+.env.local
+
+# Node
+node_modules/
+
+# Nuxt
+web/.nuxt/
+web/.output/
+web/dist/
+
+# Directus
+cms/uploads/*
+!cms/uploads/.gitkeep
+cms/extensions/*
+!cms/extensions/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code local settings
+.claude/settings.local.json
