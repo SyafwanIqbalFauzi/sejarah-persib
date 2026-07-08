@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const sections = [
-  { to: '/kronologi', icon: 'i-lucide-flag', title: 'Kronologi', description: 'Perjalanan Persib dari era ke era, sejak BIVB hingga Liga 1 modern.' },
+  { to: '/kronologi', icon: 'i-lucide-flag', title: 'Kronologi', description: 'Perjalanan Persib dari era ke era, sejak Perserikatan hingga Superleague.' },
   { to: '/pemain', icon: 'i-lucide-user', title: 'Pemain', description: 'Direktori pemain yang membela Persib dari masa ke masa.' },
   { to: '/gelar', icon: 'i-lucide-trophy', title: 'Gelar & Prestasi', description: 'Daftar gelar dan pencapaian Persib di berbagai kompetisi.' },
   { to: '/pertandingan', icon: 'i-lucide-swords', title: 'Pertandingan Bersejarah', description: 'Kurasi laga-laga ikonik, bukan database skor lengkap.' },
@@ -41,13 +41,6 @@ useSeoMeta({
           spotlight
         />
       </UPageGrid>
-    </UPageSection>
-
-    <UPageSection class="!py-8">
-      <p class="text-center text-sm text-muted max-w-2xl mx-auto">
-        Situs ini dibuat oleh penggemar (fan-made), tidak berafiliasi dan tidak mewakili
-        PT Persib Bandung Bermartabat atau manajemen klub. © {{ new Date().getFullYear() }}
-      </p>
     </UPageSection>
   </div>
 </template>

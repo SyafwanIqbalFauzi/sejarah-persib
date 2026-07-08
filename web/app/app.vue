@@ -53,7 +53,7 @@ const links = [
     <UFooter>
       <template #left>
         <p class="text-sm text-muted">
-          © {{ new Date().getFullYear() }} Sejarah PERSIB.
+        Situs ini dibuat oleh penggemar (fan-made), tidak berafiliasi dan tidak mewakili PT PERSIB Bandung Bermartabat atau manajemen klub. © {{ new Date().getFullYear() }}
         </p>
       </template>
 

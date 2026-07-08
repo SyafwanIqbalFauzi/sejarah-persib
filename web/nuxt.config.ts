@@ -12,7 +12,9 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   routeRules: {
-    '/': { prerender: true }
+    '/': { prerender: true },
+    '/panel': { redirect: '/panel/admin' },
+    '/panel/**': { proxy: 'http://localhost:8055/**' }
   },
 
   runtimeConfig: {

@@ -37,7 +37,7 @@ useSeoMeta({
       <UPageHeader
         headline="Arsip Sejarah"
         title="Kronologi"
-        description="Perjalanan Persib Bandung dari era ke era, dari cikal bakal BIVB hingga Liga 1 modern."
+        description="Perjalanan Persib dari era ke era, sejak Perserikatan hingga Superleague."
       />
 
       <UPageBody>
@@ -54,7 +54,7 @@ useSeoMeta({
 
           <template #content="{ item }">
             <div
-              class="py-4 text-muted leading-relaxed [&_p]:mb-3 [&_a]:underline [&_a]:text-primary"
+              class="prose prose-neutral dark:prose-invert max-w-none py-4 prose-a:text-primary"
               v-html="item.description"
             />
           </template>
