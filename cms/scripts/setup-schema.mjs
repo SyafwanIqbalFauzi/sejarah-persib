@@ -2,7 +2,7 @@
 // Run with: node cms/scripts/setup-schema.mjs
 // Reads DIRECTUS_URL / DIRECTUS_ADMIN_EMAIL / DIRECTUS_ADMIN_PASSWORD from ../../.env
 
-import { api, login } from './lib/directus-client.mjs'
+import { api, login, ensureForeignKey, closePg } from './lib/directus-client.mjs'
 
 async function ensureCollection(def) {
   const exists = await api(`/collections/${def.collection}`).catch(() => null)
@@ -34,6 +34,16 @@ async function ensureFieldMeta(collection, field, meta) {
   console.log(`~ updated field ${collection}.${field} interface -> ${meta.interface}`)
 }
 
+async function dropField(collection, field) {
+  const existing = await api(`/fields/${collection}/${field}`).catch(() => null)
+  if (!existing) {
+    console.log(`= field ${collection}.${field} already absent, skipping`)
+    return
+  }
+  await api(`/fields/${collection}/${field}`, { method: 'DELETE' })
+  console.log(`- dropped field ${collection}.${field}`)
+}
+
 async function ensureRelation(relation) {
   const existing = await api(`/relations/${relation.collection}/${relation.field}`).catch(() => null)
   if (existing) {
@@ -43,6 +53,7 @@ async function ensureRelation(relation) {
   await api('/relations', { method: 'POST', body: JSON.stringify(relation) })
   console.log(`+ created relation ${relation.collection}.${relation.field} -> ${relation.related_collection}`)
 }
+
 
 const pk = (type = 'integer') => ({
   field: 'id',
@@ -201,8 +212,10 @@ async function addTranslations(collection, textFields) {
     collection: transCollection,
     field: fkField,
     related_collection: collection,
-    meta: { one_field: 'translations', junction_field: 'languages_code', sort_field: null }
+    meta: { one_field: 'translations', junction_field: 'languages_code', sort_field: null },
+    schema: { on_delete: 'CASCADE' }
   })
+  await ensureForeignKey(transCollection, fkField, collection, 'CASCADE')
   await ensureRelation({
     collection: transCollection,
     field: 'languages_code',
@@ -246,7 +259,7 @@ async function main() {
 
   const sourceRef = (label) => ({
     fieldDef: { field: 'sumber_utama', type: 'integer', meta: { interface: 'select-dropdown-m2o', note: label }, schema: { is_nullable: true } },
-    relation: { field: 'sumber_utama', related_collection: 'sources' }
+    relation: { field: 'sumber_utama', related_collection: 'sources', schema: { on_delete: 'SET NULL' } }
   })
 
   // 3. eras --------------------------------------------------------------
@@ -261,6 +274,7 @@ async function main() {
   })
   await ensureField('eras', sourceRef().fieldDef)
   await ensureRelation({ collection: 'eras', ...sourceRef().relation })
+  await ensureForeignKey('eras', 'sumber_utama', 'sources', 'SET NULL')
   await addTranslations('eras', [textField('nama_era', { required: true }), textField('deskripsi', { richText: true })])
   await ensureFieldMeta('eras_translations', 'deskripsi', { interface: 'input-rich-text-html' })
 
@@ -277,6 +291,7 @@ async function main() {
   })
   await ensureField('coaches', sourceRef().fieldDef)
   await ensureRelation({ collection: 'coaches', ...sourceRef().relation })
+  await ensureForeignKey('coaches', 'sumber_utama', 'sources', 'SET NULL')
   await addTranslations('coaches', [textField('pencapaian')])
 
   // 5. players ---------------------------------------------------------------
@@ -306,6 +321,7 @@ async function main() {
   })
   await ensureField('players', sourceRef().fieldDef)
   await ensureRelation({ collection: 'players', ...sourceRef().relation })
+  await ensureForeignKey('players', 'sumber_utama', 'sources', 'SET NULL')
   await ensureField('players', fileField('foto', 'Foto pemain').fieldDef)
   await ensureRelation({ collection: 'players', ...fileField('foto').relation })
   await ensureField('players', stringField('nama_lengkap', { label: 'Nama lengkap' }))
@@ -323,14 +339,21 @@ async function main() {
     ...collectionMeta('seasons'),
     fields: [
       ...collectionMeta('seasons').fields,
-      stringField('nama_musim', { required: true }),
       stringField('nama_kompetisi'),
       stringField('hasil_akhir'),
-      intField('posisi_klasemen')
+      intField('posisi_klasemen'),
+      intField('tahun_mulai'),
+      intField('tahun_selesai'),
+      textField('keterangan')
     ]
   })
+  await dropField('seasons', 'nama_musim')
+  await ensureField('seasons', intField('tahun_mulai'))
+  await ensureField('seasons', intField('tahun_selesai'))
+  await ensureField('seasons', textField('keterangan'))
   await ensureField('seasons', { field: 'era', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: true } })
-  await ensureRelation({ collection: 'seasons', field: 'era', related_collection: 'eras' })
+  await ensureRelation({ collection: 'seasons', field: 'era', related_collection: 'eras', schema: { on_delete: 'SET NULL' } })
+  await ensureForeignKey('seasons', 'era', 'eras', 'SET NULL')
 
   // 7. matches -----------------------------------------------------------
   await ensureCollection({
@@ -344,9 +367,11 @@ async function main() {
     ]
   })
   await ensureField('matches', { field: 'season', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: true } })
-  await ensureRelation({ collection: 'matches', field: 'season', related_collection: 'seasons' })
+  await ensureRelation({ collection: 'matches', field: 'season', related_collection: 'seasons', schema: { on_delete: 'SET NULL' } })
+  await ensureForeignKey('matches', 'season', 'seasons', 'SET NULL')
   await ensureField('matches', sourceRef().fieldDef)
   await ensureRelation({ collection: 'matches', ...sourceRef().relation })
+  await ensureForeignKey('matches', 'sumber_utama', 'sources', 'SET NULL')
   await addTranslations('matches', [textField('deskripsi_naratif')])
 
   // 8. player_season_stats (no status/translations — pure stats join table) --
@@ -364,9 +389,11 @@ async function main() {
     ]
   })
   await ensureField('player_season_stats', { field: 'player', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: false } })
-  await ensureRelation({ collection: 'player_season_stats', field: 'player', related_collection: 'players' })
+  await ensureRelation({ collection: 'player_season_stats', field: 'player', related_collection: 'players', schema: { on_delete: 'CASCADE' } })
+  await ensureForeignKey('player_season_stats', 'player', 'players', 'CASCADE')
   await ensureField('player_season_stats', { field: 'season', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: false } })
-  await ensureRelation({ collection: 'player_season_stats', field: 'season', related_collection: 'seasons' })
+  await ensureRelation({ collection: 'player_season_stats', field: 'season', related_collection: 'seasons', schema: { on_delete: 'CASCADE' } })
+  await ensureForeignKey('player_season_stats', 'season', 'seasons', 'CASCADE')
 
   // 9. trophies ------------------------------------------------------------
   await ensureCollection({
@@ -379,10 +406,16 @@ async function main() {
       textField('jenis', { choices: ['klub', 'individu'] })
     ]
   })
-  await ensureField('trophies', { field: 'era', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: true } })
-  await ensureRelation({ collection: 'trophies', field: 'era', related_collection: 'eras' })
+  // Trophies relate to eras transitively via season (era -> season -> trophy),
+  // not directly — a trophy is won in a specific season, and that season already
+  // belongs to an era, so a direct trophies.era field would be a redundant/wrong path.
+  await dropField('trophies', 'era')
+  await ensureField('trophies', { field: 'season', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: true } })
+  await ensureRelation({ collection: 'trophies', field: 'season', related_collection: 'seasons', schema: { on_delete: 'SET NULL' } })
+  await ensureForeignKey('trophies', 'season', 'seasons', 'SET NULL')
   await ensureField('trophies', sourceRef().fieldDef)
   await ensureRelation({ collection: 'trophies', ...sourceRef().relation })
+  await ensureForeignKey('trophies', 'sumber_utama', 'sources', 'SET NULL')
 
   // 10. stories --------------------------------------------------------------
   await ensureCollection({
@@ -395,16 +428,20 @@ async function main() {
   })
   for (const [f, related] of [['era', 'eras'], ['player', 'players'], ['match', 'matches'], ['coach', 'coaches']]) {
     await ensureField('stories', { field: f, type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: true } })
-    await ensureRelation({ collection: 'stories', field: f, related_collection: related })
+    await ensureRelation({ collection: 'stories', field: f, related_collection: related, schema: { on_delete: 'SET NULL' } })
+    await ensureForeignKey('stories', f, related, 'SET NULL')
   }
   await ensureField('stories', sourceRef().fieldDef)
   await ensureRelation({ collection: 'stories', ...sourceRef().relation })
+  await ensureForeignKey('stories', 'sumber_utama', 'sources', 'SET NULL')
   await addTranslations('stories', [textField('judul', { required: true }), textField('isi')])
 
   console.log('\nDone. Schema created per PRD §6.')
 }
 
-main().catch((err) => {
-  console.error(err)
-  process.exit(1)
-})
+main()
+  .catch((err) => {
+    console.error(err)
+    process.exit(1)
+  })
+  .finally(() => closePg())
