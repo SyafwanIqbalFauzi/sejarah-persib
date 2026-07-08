@@ -3,18 +3,22 @@
 @plugin "@tailwindcss/typography";
 
 @theme static {
-  --font-sans: 'Public Sans', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Fraunces', serif;
+  --font-mono: 'IBM Plex Mono', monospace;
 
-  /* Persib navy blue — sampled from jersey home identity (PRD section 7.2) */
-  --color-persib-blue-50: #f2f5fc;
-  --color-persib-blue-100: #e2e8f9;
-  --color-persib-blue-200: #c0cdf1;
-  --color-persib-blue-300: #92a8e7;
-  --color-persib-blue-400: #5779db;
-  --color-persib-blue-500: #1f3c8e;
-  --color-persib-blue-600: #1a3175;
-  --color-persib-blue-700: #152860;
-  --color-persib-blue-800: #112150;
-  --color-persib-blue-900: #0f1c43;
-  --color-persib-blue-950: #09122a;
+  /* Persib navy blue — aligned with the Claude Design landing page mockup.
+     500 is the vivid interactive blue (buttons/links); 700-900 are the deep
+     navy shades used for the navbar/hero/footer. */
+  --color-persib-blue-50: #eef4ff;
+  --color-persib-blue-100: #e9eefb;
+  --color-persib-blue-200: #c7d7f7;
+  --color-persib-blue-300: #9cb8f0;
+  --color-persib-blue-400: #5f8ff0;
+  --color-persib-blue-500: #2f6fed;
+  --color-persib-blue-600: #2558c9;
+  --color-persib-blue-700: #1e3a8a;
+  --color-persib-blue-800: #16296b;
+  --color-persib-blue-900: #0f1f4d;
+  --color-persib-blue-950: #0a1533;
 }

@@ -23,6 +23,21 @@ async function grantRead(policyId, collection, permissions) {
   console.log(`+ granted public read on ${collection}`)
 }
 
+// Create-only: visitors can submit feedback but can never read back others'
+// submissions (no read permission granted for this collection).
+async function grantCreate(policyId, collection, fields) {
+  const existing = await api(`/permissions?filter[collection][_eq]=${collection}&filter[policy][_eq]=${policyId}&filter[action][_eq]=create`)
+  if (existing.data.length > 0) {
+    console.log(`= public create permission for ${collection} already exists, skipping`)
+    return
+  }
+  await api('/permissions', {
+    method: 'POST',
+    body: JSON.stringify({ collection, action: 'create', policy: policyId, permissions: {}, fields })
+  })
+  console.log(`+ granted public create on ${collection}`)
+}
+
 async function main() {
   await login()
 
@@ -34,6 +49,7 @@ async function main() {
 
   for (const c of restricted) await grantRead(publicPolicy.id, c, { status: { _eq: 'published' } })
   for (const c of open) await grantRead(publicPolicy.id, c, {})
+  await grantCreate(publicPolicy.id, 'feedback', ['nama', 'email', 'kategori', 'pesan'])
 
   console.log('\nDone. Public role can now read published content.')
 }

@@ -436,6 +436,22 @@ async function main() {
   await ensureForeignKey('stories', 'sumber_utama', 'sources', 'SET NULL')
   await addTranslations('stories', [textField('judul', { required: true }), textField('isi')])
 
+  // 11. feedback (public "kritik & saran" submissions — no status/translations,
+  // write-only from the public's perspective; only admins read it in Directus) ---
+  await ensureCollection({
+    collection: 'feedback',
+    meta: { icon: 'feedback' },
+    schema: {},
+    fields: [
+      pk(),
+      { field: 'date_created', type: 'timestamp', meta: { interface: 'datetime', special: ['date-created'], readonly: true, hidden: true }, schema: { is_nullable: true } },
+      stringField('nama'),
+      stringField('email'),
+      textField('kategori', { choices: ['Koreksi data sejarah', 'Saran fitur', 'Lainnya'] }),
+      textField('pesan', { required: true })
+    ]
+  })
+
   console.log('\nDone. Schema created per PRD §6.')
 }
 
