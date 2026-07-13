@@ -34,8 +34,8 @@ Fan-made archive & history website for Persib Bandung. See [PRD-Sejarah-Persib-B
 7. Jalankan frontend:
    ```
    cd web
-   npm install   # kalau belum
-   npm run dev
+   pnpm install   # kalau belum
+   pnpm dev
    ```
 8. Buka http://localhost:3000
 
