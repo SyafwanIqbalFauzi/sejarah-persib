@@ -36,8 +36,9 @@ useSeoMeta({
     <UPage>
       <UPageHeader
         headline="Arsip Sejarah"
-        title="Kronologi"
-        description="Perjalanan Persib dari era ke era, sejak Perserikatan hingga Superleague."
+        title="Cerita di Setiap Era"
+        description="Perjalanan Persib dari setiap era Liga Indonesia, sejak Perserikatan hingga Liga 1 / Super League."
+        :links="[{ label: 'Semua Musim', icon: 'i-lucide-arrow-right', trailing: true, color: 'primary', variant: 'subtle', to: '/kronologi/musim' }]"
       />
 
       <UPageBody>
@@ -48,7 +49,6 @@ useSeoMeta({
           <template #default="{ item }">
             <div class="flex flex-col items-start py-0.5 text-left">
               <span class="font-medium">{{ item.label }}</span>
-              <span class="text-xs text-muted">{{ item.periode }}</span>
             </div>
           </template>
 

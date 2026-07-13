@@ -94,10 +94,10 @@ useSeoMeta({
       <div class="relative mx-auto flex max-w-6xl flex-col items-center gap-14 px-6 pt-[104px] pb-24 sm:px-12 lg:flex-row">
         <div class="min-w-0 flex-[1.15]">
           <div class="hero-anim mb-7 inline-block rounded-[20px] border border-persib-blue-500/50 bg-persib-blue-500/18 px-4 py-[7px] text-xs font-bold tracking-[1.5px] text-persib-blue-300 uppercase">
-            Arsip Digital
+            Arsip Sejarah
           </div>
           <h1 class="hero-anim-d1 mb-6 text-5xl leading-[1.02] font-extrabold tracking-[-1.5px] text-white uppercase sm:text-[60px]">
-            Sejarah Persib<br>Bandung
+            Sejarah PERSIB<br>Bandung
           </h1>
           <p class="hero-anim-d2 mb-10 max-w-[520px] text-lg leading-[1.65] text-slate-300">
             Era, pemain, dan prestasi Maung Bandung dari masa ke masa.
@@ -211,7 +211,7 @@ useSeoMeta({
           <p class="mb-[18px] text-[14.5px] leading-[1.55] text-slate-500">
             {{ card.description }}
           </p>
-          <span class="text-sm font-bold text-persib-blue-500 group-hover:underline">Buka arsip →</span>
+          <span class="text-sm font-bold text-persib-blue-500 group-hover:underline">Selengkapnya →</span>
         </NuxtLink>
       </div>
     </section>

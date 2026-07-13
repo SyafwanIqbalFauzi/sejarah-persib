@@ -5,11 +5,16 @@ const directus = useDirectus()
 
 const { data: trophies } = await useAsyncData('trophies', () => directus.request(
   readItems('trophies', {
-    fields: ['id', 'nama_gelar', 'tahun', 'kompetisi', 'jenis'],
+    fields: ['id', 'nama_gelar', 'jenis', 'kategori_turunan', { season: ['tahun_mulai', 'tahun_selesai', 'nama_kompetisi'] }],
     filter: { status: { _eq: 'published' } },
-    sort: ['-tahun']
+    sort: ['-season.tahun_mulai']
   })
 ))
+
+function tahun(trophy: any) {
+  if (!trophy.season) return '—'
+  return trophy.season.tahun_selesai ? `${trophy.season.tahun_mulai}/${String(trophy.season.tahun_selesai).slice(-2)}` : `${trophy.season.tahun_mulai}`
+}
 
 useSeoMeta({
   title: 'Gelar & Prestasi — Sejarah Persib Bandung',
@@ -32,7 +37,7 @@ useSeoMeta({
             v-for="trophy in trophies"
             :key="trophy.id"
             :title="trophy.nama_gelar"
-            :description="trophy.kompetisi"
+            :description="trophy.season?.nama_kompetisi"
             orientation="horizontal"
             spotlight
           >
@@ -47,7 +52,7 @@ useSeoMeta({
                   variant="subtle"
                   size="lg"
                 >
-                  {{ trophy.tahun }}
+                  {{ tahun(trophy) }}
                 </UBadge>
               </div>
             </template>

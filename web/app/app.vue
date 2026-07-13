@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 useHead({
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1' }
@@ -21,38 +21,129 @@ useSeoMeta({
 
 const links = [
   { label: 'Beranda', to: '/' },
-  { label: 'Kronologi', to: '/kronologi' },
+  {
+    label: 'Kronologi',
+    to: '/kronologi',
+    children: [
+      { label: 'Cerita per Era', to: '/kronologi', description: 'Narasi dari setiap era yang dilalui PERSIB' },
+      { label: 'Semua Musim', to: '/kronologi/musim', description: 'Tabel semua musim yang dilalui PERSIB' }
+    ]
+  },
   { label: 'Gelar', to: '/gelar' },
   { label: 'Pemain', to: '/pemain' },
   { label: 'Pelatih', to: '/pelatih' }
 ]
 
 const route = useRoute()
+
+function isActive(link: (typeof links)[number]) {
+  if (link.children) return link.children.some((c) => route.path === c.to)
+  return route.path === link.to
+}
+
+const mobileOpen = ref(false)
+const kronologiOpen = ref(false)
 </script>
 
 <template>
   <UApp>
-    <header class="flex h-[76px] items-center justify-between bg-persib-blue-700 px-6 sm:px-12">
+    <header class="relative z-50 flex h-[76px] items-center justify-between bg-persib-blue-700 px-6 sm:px-12">
       <NuxtLink to="/">
         <AppLogo />
       </NuxtLink>
 
       <div class="hidden items-center gap-9 sm:flex">
-        <NuxtLink
-          v-for="link in links"
-          :key="link.to"
-          :to="link.to"
-          class="text-sm font-semibold transition-colors"
-          :class="route.path === link.to ? 'text-white' : 'text-white/75 hover:text-white'"
-        >
-          {{ link.label }}
-        </NuxtLink>
+        <template v-for="link in links" :key="link.to">
+          <div
+            v-if="link.children"
+            class="relative"
+            @mouseenter="kronologiOpen = true"
+            @mouseleave="kronologiOpen = false"
+          >
+            <NuxtLink
+              :to="link.to"
+              class="inline-flex items-center gap-1 text-sm font-semibold transition-colors"
+              :class="isActive(link) ? 'text-white' : 'text-white/75 hover:text-white'"
+            >
+              {{ link.label }}
+              <UIcon name="i-lucide-chevron-down" class="size-3 opacity-60 transition-transform" :class="kronologiOpen ? 'rotate-180' : ''" />
+            </NuxtLink>
+
+            <!-- Invisible bridge closes the gap between trigger and panel so the hover zone stays continuous -->
+            <div v-show="kronologiOpen" class="absolute left-0 top-full z-50 h-3 w-64" />
+
+            <div v-show="kronologiOpen" class="absolute left-0 top-[calc(100%+0.75rem)] z-50 w-64">
+              <div class="rounded-lg border border-white/10 bg-persib-blue-800 p-1.5 shadow-xl">
+                <NuxtLink
+                  v-for="child in link.children"
+                  :key="child.to"
+                  :to="child.to"
+                  class="block rounded-md px-3 py-2 transition-colors hover:bg-white/10"
+                  @click="kronologiOpen = false"
+                >
+                  <div class="text-sm font-medium text-white">{{ child.label }}</div>
+                  <div class="text-xs text-white/50">{{ child.description }}</div>
+                </NuxtLink>
+              </div>
+            </div>
+          </div>
+
+          <NuxtLink
+            v-else
+            :to="link.to"
+            class="text-sm font-semibold transition-colors"
+            :class="isActive(link) ? 'text-white' : 'text-white/75 hover:text-white'"
+          >
+            {{ link.label }}
+          </NuxtLink>
+        </template>
       </div>
 
-      <div class="dark">
-        <UColorModeButton />
+      <div class="flex items-center gap-2">
+        <div class="dark">
+          <UColorModeButton />
+        </div>
+        <UButton
+          icon="i-lucide-menu"
+          color="neutral"
+          variant="ghost"
+          class="text-white hover:bg-white/10 sm:hidden"
+          aria-label="Buka menu navigasi"
+          @click="mobileOpen = true"
+        />
       </div>
     </header>
+
+    <USlideover v-model:open="mobileOpen" side="right" title="Menu">
+      <template #body>
+        <nav class="flex flex-col gap-1">
+          <template v-for="link in links" :key="link.to">
+            <div v-if="link.children">
+              <div class="px-2 py-2 text-sm font-semibold text-muted">{{ link.label }}</div>
+              <NuxtLink
+                v-for="child in link.children"
+                :key="child.to"
+                :to="child.to"
+                class="block rounded-md px-4 py-2.5 text-sm"
+                :class="route.path === child.to ? 'bg-primary/10 text-primary font-medium' : 'text-default hover:bg-elevated'"
+                @click="mobileOpen = false"
+              >
+                {{ child.label }}
+              </NuxtLink>
+            </div>
+            <NuxtLink
+              v-else
+              :to="link.to"
+              class="rounded-md px-2 py-2.5 text-sm font-semibold"
+              :class="isActive(link) ? 'text-primary' : 'text-default hover:bg-elevated'"
+              @click="mobileOpen = false"
+            >
+              {{ link.label }}
+            </NuxtLink>
+          </template>
+        </nav>
+      </template>
+    </USlideover>
 
     <UMain>
       <NuxtPage />

@@ -34,6 +34,23 @@ async function ensureFieldMeta(collection, field, meta) {
   console.log(`~ updated field ${collection}.${field} interface -> ${meta.interface}`)
 }
 
+// Unlike ensureField (create-if-absent, never touches an existing field), this
+// keeps a field's conditions/choices in sync on every run — needed when a
+// dropdown's option set grows after the field already exists in Directus.
+async function syncFieldConditions(collection, field, conditions) {
+  const existing = await api(`/fields/${collection}/${field}`).catch(() => null)
+  if (!existing) {
+    console.log(`= field ${collection}.${field} absent, skipping condition sync`)
+    return
+  }
+  if (JSON.stringify(existing.data.meta?.conditions) === JSON.stringify(conditions)) {
+    console.log(`= field ${collection}.${field} conditions already in sync, skipping`)
+    return
+  }
+  await api(`/fields/${collection}/${field}`, { method: 'PATCH', body: JSON.stringify({ meta: { conditions } }) })
+  console.log(`~ synced conditions for ${collection}.${field}`)
+}
+
 async function dropField(collection, field) {
   const existing = await api(`/fields/${collection}/${field}`).catch(() => null)
   if (!existing) {
@@ -401,8 +418,6 @@ async function main() {
     fields: [
       ...collectionMeta('trophies').fields,
       stringField('nama_gelar', { required: true }),
-      intField('tahun'),
-      stringField('kompetisi'),
       textField('jenis', { choices: ['klub', 'individu'] })
     ]
   })
@@ -413,9 +428,72 @@ async function main() {
   await ensureField('trophies', { field: 'season', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: true } })
   await ensureRelation({ collection: 'trophies', field: 'season', related_collection: 'seasons', schema: { on_delete: 'SET NULL' } })
   await ensureForeignKey('trophies', 'season', 'seasons', 'SET NULL')
-  await ensureField('trophies', sourceRef().fieldDef)
-  await ensureRelation({ collection: 'trophies', ...sourceRef().relation })
-  await ensureForeignKey('trophies', 'sumber_utama', 'sources', 'SET NULL')
+  await dropField('trophies', 'tahun')
+  await dropField('trophies', 'sumber_utama')
+  // Kompetisi is now sourced from the related season (seasons.nama_kompetisi),
+  // not duplicated on the trophy itself.
+  await dropField('trophies', 'kompetisi')
+  // Sub-category depends on `jenis`: different choice sets shown per value,
+  // hidden entirely until `jenis` is set (Directus conditional field).
+  const kategoriTurunanConditions = [
+    {
+      name: 'Klub',
+      rule: { jenis: { _eq: 'klub' } },
+      hidden: false,
+      options: {
+        choices: [
+          { text: 'Liga Amatir', value: 'liga_amatir' },
+          { text: 'Liga Profesional', value: 'liga_profesional' },
+          { text: 'Kompetisi Pramusim', value: 'kompetisi_pramusim' },
+          { text: 'Piala Liga', value: 'piala_liga' },
+          { text: 'Kompetisi Tidak Resmi', value: 'kompetisi_tidak_resmi' }
+        ]
+      }
+    },
+    {
+      name: 'Individu',
+      rule: { jenis: { _eq: 'individu' } },
+      hidden: false,
+      options: {
+        choices: [
+          { text: 'Assist', value: 'assist' },
+          { text: 'Top Score', value: 'top_score' },
+          { text: 'Pemain Terbaik', value: 'pemain_terbaik' },
+          { text: 'Pemain Muda Terbaik', value: 'pemain_muda_terbaik' }
+        ]
+      }
+    }
+  ]
+  await ensureField('trophies', {
+    field: 'kategori_turunan',
+    type: 'string',
+    meta: {
+      interface: 'select-dropdown',
+      note: 'Kategori turunan dari jenis gelar',
+      hidden: true,
+      options: { choices: [] },
+      conditions: kategoriTurunanConditions
+    },
+    schema: { is_nullable: true }
+  })
+  await syncFieldConditions('trophies', 'kategori_turunan', kategoriTurunanConditions)
+  // Individual trophies (jenis = individu) are awarded to a specific player —
+  // hidden entirely for club trophies.
+  await ensureField('trophies', {
+    field: 'player',
+    type: 'integer',
+    meta: {
+      interface: 'select-dropdown-m2o',
+      note: 'Pemain penerima (khusus gelar individu)',
+      hidden: true,
+      conditions: [
+        { name: 'Individu', rule: { jenis: { _eq: 'individu' } }, hidden: false }
+      ]
+    },
+    schema: { is_nullable: true }
+  })
+  await ensureRelation({ collection: 'trophies', field: 'player', related_collection: 'players', schema: { on_delete: 'SET NULL' } })
+  await ensureForeignKey('trophies', 'player', 'players', 'SET NULL')
 
   // 10. stories --------------------------------------------------------------
   await ensureCollection({
