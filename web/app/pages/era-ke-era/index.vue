@@ -26,8 +26,8 @@ const tabItems = computed(() => (eras.value ?? []).map((era) => ({
 })))
 
 useSeoMeta({
-  title: 'Kronologi — Sejarah Persib Bandung',
-  description: 'Kronologi era Persib Bandung dari BIVB hingga Liga 1 modern.'
+  title: 'Era ke Era — Sejarah Persib Bandung',
+  description: 'Perjalanan era Persib Bandung dari BIVB hingga Liga 1 modern.'
 })
 </script>
 
@@ -38,7 +38,6 @@ useSeoMeta({
         headline="Arsip Sejarah"
         title="Cerita di Setiap Era"
         description="Perjalanan Persib dari setiap era Liga Indonesia, sejak Perserikatan hingga Liga 1 / Super League."
-        :links="[{ label: 'Semua Musim', icon: 'i-lucide-arrow-right', trailing: true, color: 'primary', variant: 'subtle', to: '/kronologi/musim' }]"
       />
 
       <UPageBody>

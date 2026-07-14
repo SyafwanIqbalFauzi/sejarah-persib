@@ -5,7 +5,10 @@ useHead({
   ],
   htmlAttrs: {
     lang: 'id'
-  }
+  },
+  link: [
+    { rel: 'icon', type: 'image/svg+xml', href: '/logo/sejarah-persib-badge.svg' }
+  ]
 })
 
 const title = 'Sejarah Persib Bandung'
@@ -16,17 +19,21 @@ useSeoMeta({
   description,
   ogTitle: title,
   ogDescription: description,
+  ogImage: '/logo/sejarah-persib-logo-2400.png',
   twitterCard: 'summary_large_image'
 })
 
 const links = [
   { label: 'Beranda', to: '/' },
+  { label: 'Era ke Era', to: '/era-ke-era' },
   {
-    label: 'Kronologi',
-    to: '/kronologi',
+    label: 'Kompetisi',
+    to: '/kompetisi',
     children: [
-      { label: 'Cerita per Era', to: '/kronologi', description: 'Narasi dari setiap era yang dilalui PERSIB' },
-      { label: 'Semua Musim', to: '/kronologi/musim', description: 'Tabel semua musim yang dilalui PERSIB' }
+      { label: 'Liga', to: '/kompetisi?kategori=liga' },
+      { label: 'Piala Liga', to: '/kompetisi?kategori=piala_liga' },
+      { label: 'Kompetisi Pramusim', to: '/kompetisi?kategori=kompetisi_pramusim' },
+      { label: 'Kompetisi Tidak Resmi', to: '/kompetisi?kategori=kompetisi_tidak_resmi' }
     ]
   },
   { label: 'Gelar', to: '/gelar' },
@@ -37,12 +44,11 @@ const links = [
 const route = useRoute()
 
 function isActive(link: (typeof links)[number]) {
-  if (link.children) return link.children.some((c) => route.path === c.to)
   return route.path === link.to
 }
 
 const mobileOpen = ref(false)
-const kronologiOpen = ref(false)
+const kompetisiOpen = ref(false)
 </script>
 
 <template>
@@ -55,10 +61,10 @@ const kronologiOpen = ref(false)
       <div class="hidden items-center gap-9 sm:flex">
         <template v-for="link in links" :key="link.to">
           <div
-            v-if="link.children"
+            v-if="'children' in link"
             class="relative"
-            @mouseenter="kronologiOpen = true"
-            @mouseleave="kronologiOpen = false"
+            @mouseenter="kompetisiOpen = true"
+            @mouseleave="kompetisiOpen = false"
           >
             <NuxtLink
               :to="link.to"
@@ -66,23 +72,22 @@ const kronologiOpen = ref(false)
               :class="isActive(link) ? 'text-white' : 'text-white/75 hover:text-white'"
             >
               {{ link.label }}
-              <UIcon name="i-lucide-chevron-down" class="size-3 opacity-60 transition-transform" :class="kronologiOpen ? 'rotate-180' : ''" />
+              <UIcon name="i-lucide-chevron-down" class="size-3 opacity-60 transition-transform" :class="kompetisiOpen ? 'rotate-180' : ''" />
             </NuxtLink>
 
             <!-- Invisible bridge closes the gap between trigger and panel so the hover zone stays continuous -->
-            <div v-show="kronologiOpen" class="absolute left-0 top-full z-50 h-3 w-64" />
+            <div v-show="kompetisiOpen" class="absolute left-0 top-full z-50 h-3 w-56" />
 
-            <div v-show="kronologiOpen" class="absolute left-0 top-[calc(100%+0.75rem)] z-50 w-64">
+            <div v-show="kompetisiOpen" class="absolute left-0 top-[calc(100%+0.75rem)] z-50 w-56">
               <div class="rounded-lg border border-white/10 bg-persib-blue-800 p-1.5 shadow-xl">
                 <NuxtLink
                   v-for="child in link.children"
                   :key="child.to"
                   :to="child.to"
-                  class="block rounded-md px-3 py-2 transition-colors hover:bg-white/10"
-                  @click="kronologiOpen = false"
+                  class="block rounded-md px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
+                  @click="kompetisiOpen = false"
                 >
-                  <div class="text-sm font-medium text-white">{{ child.label }}</div>
-                  <div class="text-xs text-white/50">{{ child.description }}</div>
+                  {{ child.label }}
                 </NuxtLink>
               </div>
             </div>
@@ -118,14 +123,13 @@ const kronologiOpen = ref(false)
       <template #body>
         <nav class="flex flex-col gap-1">
           <template v-for="link in links" :key="link.to">
-            <div v-if="link.children">
+            <div v-if="'children' in link">
               <div class="px-2 py-2 text-sm font-semibold text-muted">{{ link.label }}</div>
               <NuxtLink
                 v-for="child in link.children"
                 :key="child.to"
                 :to="child.to"
-                class="block rounded-md px-4 py-2.5 text-sm"
-                :class="route.path === child.to ? 'bg-primary/10 text-primary font-medium' : 'text-default hover:bg-elevated'"
+                class="block rounded-md px-4 py-2.5 text-sm text-default hover:bg-elevated"
                 @click="mobileOpen = false"
               >
                 {{ child.label }}
@@ -152,8 +156,9 @@ const kronologiOpen = ref(false)
     <footer class="bg-persib-blue-900 px-6 pt-12 pb-7 sm:px-12">
       <div class="mx-auto flex max-w-6xl flex-wrap items-start justify-between gap-6 border-b border-white/12 pb-7">
         <div class="max-w-[420px]">
-          <div class="mb-2.5 text-lg font-extrabold text-white">
-            SEJARAH PERSIB
+          <div class="mb-2.5 flex items-center gap-2.5">
+            <img src="/logo/sejarah-persib-badge.svg" alt="Lambang Sejarah Persib" class="size-8">
+            <span class="text-lg font-extrabold text-white">SEJARAH PERSIB</span>
           </div>
           <p class="text-[13px] leading-relaxed text-slate-400">
             Fan-made / tidak berafiliasi dan tidak mewakili PT Persib Bandung Bermartabat atau manajemen klub.

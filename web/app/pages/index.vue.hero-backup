@@ -1,68 +1,14 @@
 <script setup lang="ts">
-import { createItem, readItems } from '@directus/sdk'
+import { createItem } from '@directus/sdk'
 
 const directus = useDirectus()
 
-const { data: trophies } = await useAsyncData('home-trophies', () => directus.request(
-  readItems('trophies', {
-    fields: ['id', 'jenis', 'kategori_turunan', { season: ['tahun_mulai', 'tahun_selesai'] }],
-    filter: { status: { _eq: 'published' } },
-    limit: -1
-  })
-))
-
-// Tahun sebuah gelar dianggap diraih pada akhir musim (tahun_selesai), fallback ke tahun_mulai.
-function achievedYear(trophy: any): number | null {
-  if (!trophy.season) return null
-  return trophy.season.tahun_selesai ?? trophy.season.tahun_mulai ?? null
-}
-
-// Urutan tetap kategori gelar klub beserta label & ikonnya.
-const kategoriOrder = [
-  { key: 'liga_profesional', label: 'Liga Profesional', icon: 'i-lucide-trophy' },
-  { key: 'liga_amatir', label: 'Liga Perserikatan', icon: 'i-lucide-shield' },
-  { key: 'piala_liga', label: 'Piala Liga', icon: 'i-lucide-medal' },
-  { key: 'kompetisi_pramusim', label: 'Kompetisi Pramusim', icon: 'i-lucide-swords' },
-  { key: 'kompetisi_tidak_resmi', label: 'Kompetisi Tidak Resmi', icon: 'i-lucide-star' }
-]
-
-const clubTrophies = computed(() =>
-  (trophies.value ?? []).filter((t: any) => t.jenis === 'klub' && achievedYear(t) !== null)
-)
-
-// Rentang tahun slider tetap: dari berdirinya Persib (1933) hingga tahun berjalan.
-const heroMinYear = 1933
-const heroMaxYear = new Date().getFullYear()
-const heroYear = ref<number>(heroMaxYear)
-
-// Hitung kumulatif: semua gelar yang diraih s/d tahun terpilih, dikelompokkan per kategori.
-const heroCategoryCounts = computed(() => {
-  const counts: Record<string, number> = {}
-  for (const t of clubTrophies.value) {
-    if ((achievedYear(t) as number) <= heroYear.value) {
-      const key = t.kategori_turunan ?? 'lainnya'
-      counts[key] = (counts[key] ?? 0) + 1
-    }
-  }
-  return kategoriOrder.map((cat) => ({ ...cat, count: counts[cat.key] ?? 0 }))
-})
-
-const heroTotalTrophies = computed(() =>
-  heroCategoryCounts.value.reduce((sum, c) => sum + c.count, 0)
-)
-
 const cards = [
   {
-    to: '/era-ke-era',
-    title: 'Era ke Era',
+    to: '/kronologi',
+    title: 'Kronologi',
     description: 'Jejak era demi era, dari Perserikatan hingga Superleague.',
     icon: '<svg width="24" height="24" viewBox="0 0 34 34"><line x1="3" y1="17" x2="31" y2="17" stroke="#fff" stroke-width="2.5"/><circle cx="7" cy="17" r="3.5" fill="#fff"/><circle cx="17" cy="17" r="3.5" fill="#fff"/><circle cx="27" cy="17" r="3.5" fill="#fff"/></svg>'
-  },
-  {
-    to: '/kompetisi',
-    title: 'Kompetisi',
-    description: 'Rekap kompetisi yang pernah diikuti, dari liga hingga turnamen tidak resmi.',
-    icon: '<svg width="24" height="24" viewBox="0 0 34 34"><rect x="9" y="9" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.5" transform="rotate(45 17 17)"/></svg>'
   },
   {
     to: '/gelar',
@@ -158,10 +104,10 @@ useSeoMeta({
           </p>
           <div class="hero-anim-d2 flex flex-wrap gap-[14px]">
             <UButton
-              to="/era-ke-era"
+              to="/kronologi"
               class="rounded-lg bg-persib-blue-500 px-[30px] py-4 text-[15px] font-bold hover:bg-persib-blue-400"
             >
-              Jelajahi Era ke Era
+              Jelajahi Kronologi
             </UButton>
             <UButton
               to="#arsip"
@@ -173,44 +119,60 @@ useSeoMeta({
           </div>
         </div>
 
-        <div class="hero-anim-d1 w-full flex-1">
-          <div class="rounded-2xl border border-white/12 bg-white/[0.04] p-6 backdrop-blur-sm sm:p-8">
-            <div class="mb-5 flex items-baseline gap-3">
-              <span class="text-4xl font-extrabold text-white tabular-nums">{{ heroTotalTrophies }}</span>
-              <span class="text-sm text-slate-300">gelar klub hingga {{ heroYear }}</span>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2.5">
-              <div
-                v-for="cat in heroCategoryCounts"
-                :key="cat.key"
-                class="flex items-center gap-2.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5"
-                :class="cat.count === 0 ? 'opacity-45' : ''"
-              >
-                <UIcon :name="cat.icon" class="size-5 shrink-0 text-persib-blue-300" />
-                <div class="min-w-0">
-                  <div class="text-lg leading-none font-bold text-white tabular-nums">{{ cat.count }}</div>
-                  <div class="mt-0.5 truncate text-[11px] text-slate-400">{{ cat.label }}</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-6">
-              <div class="mb-3 flex items-center justify-between">
-                <span class="text-xs font-medium text-slate-400">Geser untuk lihat perkembangan gelar</span>
-                <UBadge color="primary" variant="subtle" size="lg" class="tabular-nums">{{ heroYear }}</UBadge>
-              </div>
-              <USlider
-                v-model="heroYear"
-                :min="heroMinYear"
-                :max="heroMaxYear"
-                :step="1"
-                size="lg"
+        <div class="hero-anim-d1 relative min-h-[340px] w-full flex-1 self-stretch">
+          <div class="absolute inset-0 overflow-hidden border border-white/12 bg-gradient-to-br from-persib-blue-700 to-persib-blue-900 [clip-path:polygon(12%_0%,100%_0%,100%_100%,0%_100%)]">
+            <div class="pr-stripes absolute inset-0 opacity-20" />
+            <svg
+              class="absolute top-1/2 left-[56%] -translate-x-1/2 -translate-y-1/2"
+              width="240"
+              height="240"
+              viewBox="0 0 240 240"
+            >
+              <circle
+                cx="120"
+                cy="120"
+                r="82"
+                fill="none"
+                stroke="#fff"
+                stroke-width="2"
+                opacity="0.18"
               />
-              <div class="mt-2 flex justify-between text-[11px] text-slate-500 tabular-nums">
-                <span>{{ heroMinYear }}</span>
-                <span>{{ heroMaxYear }}</span>
-              </div>
+              <circle
+                cx="120"
+                cy="120"
+                r="4"
+                fill="#fff"
+                opacity="0.25"
+              />
+            </svg>
+            <div class="absolute top-1/2 right-0 left-[20%] h-0.5 bg-white/14" />
+            <div class="pr-ball absolute size-8 -mt-4 -ml-4">
+              <div class="pr-ball-shadow absolute top-[29px] left-1/2 h-[7px] w-[26px] -translate-x-1/2 rounded-full bg-black/35 blur-[2px]" />
+              <svg
+                class="pr-ball-spin relative"
+                width="32"
+                height="32"
+                viewBox="0 0 34 34"
+              >
+                <circle
+                  cx="17"
+                  cy="17"
+                  r="16"
+                  fill="#fff"
+                />
+                <path
+                  d="M17 5 L24.5 10.5 L21.7 19.5 L12.3 19.5 L9.5 10.5 Z"
+                  fill="#0F1F4D"
+                />
+                <path
+                  d="M17 5 L17 0.5 M24.5 10.5 L29 7.5 M21.7 19.5 L24.5 24.5 M12.3 19.5 L9.5 24.5 M9.5 10.5 L5 7.5"
+                  stroke="#0F1F4D"
+                  stroke-width="1.3"
+                />
+              </svg>
+            </div>
+            <div class="absolute right-0 bottom-[22px] left-0 text-center">
+              <span class="font-mono text-[11px] tracking-[2px] text-white/40 uppercase">Semangat Maung Bandung</span>
             </div>
           </div>
         </div>
