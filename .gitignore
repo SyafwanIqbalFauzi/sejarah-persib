@@ -16,6 +16,9 @@ cms/uploads/*
 cms/extensions/*
 !cms/extensions/.gitkeep
 
+# Docs (internal)
+PRD-Sejarah-Persib-Bandung.md
+
 # OS
 .DS_Store
 Thumbs.db
