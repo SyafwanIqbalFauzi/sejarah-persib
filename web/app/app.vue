@@ -26,17 +26,18 @@ useSeoMeta({
 const links = [
   { label: 'Beranda', to: '/' },
   { label: 'Era ke Era', to: '/era-ke-era' },
+  { label: 'Prestasi', to: '/prestasi' },
   {
     label: 'Kompetisi',
     to: '/kompetisi',
     children: [
-      { label: 'Liga', to: '/kompetisi?kategori=liga' },
-      { label: 'Piala Liga', to: '/kompetisi?kategori=piala_liga' },
+      { label: 'Liga', to: '/kompetisi/liga' },
+      { label: 'Piala Liga', to: '/kompetisi/piala-liga' },
+      { label: 'Piala Asia', to: '/kompetisi/piala-asia' },
       { label: 'Kompetisi Pramusim', to: '/kompetisi?kategori=kompetisi_pramusim' },
       { label: 'Kompetisi Tidak Resmi', to: '/kompetisi?kategori=kompetisi_tidak_resmi' }
     ]
   },
-  { label: 'Gelar', to: '/gelar' },
   { label: 'Pemain', to: '/pemain' },
   { label: 'Pelatih', to: '/pelatih' }
 ]
@@ -49,11 +50,25 @@ function isActive(link: (typeof links)[number]) {
 
 const mobileOpen = ref(false)
 const kompetisiOpen = ref(false)
+const colorMode = useColorMode()
+
+const showBackToTop = ref(false)
+
+function onScroll() {
+  showBackToTop.value = window.scrollY > 480
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+onMounted(() => window.addEventListener('scroll', onScroll, { passive: true }))
+onUnmounted(() => window.removeEventListener('scroll', onScroll))
 </script>
 
 <template>
   <UApp>
-    <header class="relative z-50 flex h-[76px] items-center justify-between bg-persib-blue-700 px-6 sm:px-12">
+    <header class="sticky top-0 z-50 flex h-[76px] items-center justify-between bg-persib-blue-700 px-6 sm:px-12">
       <NuxtLink to="/">
         <AppLogo />
       </NuxtLink>
@@ -106,7 +121,13 @@ const kompetisiOpen = ref(false)
 
       <div class="flex items-center gap-2">
         <div class="dark">
-          <UColorModeButton />
+          <UButton
+            :icon="colorMode.value === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon'"
+            color="neutral"
+            variant="ghost"
+            :aria-label="colorMode.value === 'dark' ? 'Pindah ke mode terang' : 'Pindah ke mode gelap'"
+            @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
+          />
         </div>
         <UButton
           icon="i-lucide-menu"
@@ -153,6 +174,26 @@ const kompetisiOpen = ref(false)
       <NuxtPage />
     </UMain>
 
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0 translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 translate-y-2"
+    >
+      <UButton
+        v-if="showBackToTop"
+        icon="i-lucide-arrow-up"
+        color="primary"
+        size="lg"
+        square
+        class="fixed right-6 bottom-6 z-50 rounded-full shadow-lg sm:right-10 sm:bottom-10"
+        aria-label="Kembali ke atas"
+        @click="scrollToTop"
+      />
+    </Transition>
+
     <footer class="bg-persib-blue-900 px-6 pt-12 pb-7 sm:px-12">
       <div class="mx-auto flex max-w-6xl flex-wrap items-start justify-between gap-6 border-b border-white/12 pb-7">
         <div class="max-w-[420px]">
@@ -161,7 +202,7 @@ const kompetisiOpen = ref(false)
             <span class="text-lg font-extrabold text-white">SEJARAH PERSIB</span>
           </div>
           <p class="text-[13px] leading-relaxed text-slate-400">
-            Fan-made / tidak berafiliasi dan tidak mewakili PT Persib Bandung Bermartabat atau manajemen klub.
+            Bobotoh-made / tidak berafiliasi dan tidak mewakili PT Persib Bandung Bermartabat atau manajemen klub.
           </p>
         </div>
 
@@ -189,7 +230,7 @@ const kompetisiOpen = ref(false)
       </div>
 
       <p class="pt-5 text-center text-xs text-slate-500">
-        © {{ new Date().getFullYear() }} Sejarah Persib — Proyek fan-made.
+        © {{ new Date().getFullYear() }} Sejarah Persib — Proyek Bobotoh-made.
       </p>
     </footer>
   </UApp>

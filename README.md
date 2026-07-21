@@ -1,6 +1,6 @@
 # Sejarah Persib Bandung
 
-Fan-made archive & history website for Persib Bandung. See [PRD-Sejarah-Persib-Bandung.md](PRD-Sejarah-Persib-Bandung.md) for full scope.
+Bobotoh-made archive & history website for Persib Bandung. See [PRD-Sejarah-Persib-Bandung.md](PRD-Sejarah-Persib-Bandung.md) for full scope.
 
 ## Struktur repo
 

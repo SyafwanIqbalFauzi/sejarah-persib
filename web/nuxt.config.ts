@@ -17,7 +17,8 @@ export default defineNuxtConfig({
     '/panel': { redirect: '/panel/admin' },
     '/panel/**': { proxy: 'http://localhost:8055/**' },
     '/kronologi': { redirect: '/era-ke-era' },
-    '/kronologi/musim': { redirect: '/kompetisi' }
+    '/kronologi/musim': { redirect: '/kompetisi' },
+    '/gelar': { redirect: '/prestasi' }
   },
 
   runtimeConfig: {

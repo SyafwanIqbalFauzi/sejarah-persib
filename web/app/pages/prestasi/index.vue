@@ -5,26 +5,38 @@ const directus = useDirectus()
 
 const { data: trophies } = await useAsyncData('trophies', () => directus.request(
   readItems('trophies', {
-    fields: ['id', 'nama_gelar', 'jenis', 'kategori_turunan', { season: ['tahun_mulai', 'tahun_selesai', 'nama_kompetisi'] }],
+    fields: [
+      'id', 'nama_gelar', 'jenis', 'kategori_turunan',
+      { season: ['tahun_mulai', 'tahun_selesai', 'nama_kompetisi'] },
+      { cup_season: ['tahun_mulai', 'tahun_selesai', 'nama_kompetisi'] },
+      { asia_season: ['tahun_mulai', 'tahun_selesai', 'nama_kompetisi'] },
+      { pramusim_season: ['tahun_mulai', 'tahun_selesai', 'nama_kompetisi'] }
+    ],
     filter: { status: { _eq: 'published' } },
     sort: ['-season.tahun_mulai'],
     limit: -1
   })
 ))
 
-// Tahun sebuah gelar dianggap diraih pada akhir musim (tahun_selesai), fallback ke tahun_mulai.
+// Sebuah gelar terhubung ke salah satu koleksi season (Liga/Piala/Asia/Pramusim).
+// Tahun diraih = tahun_selesai season terkait (fallback tahun_mulai).
+function trophySeason(trophy: any) {
+  return trophy.season ?? trophy.cup_season ?? trophy.asia_season ?? trophy.pramusim_season ?? null
+}
 function achievedYear(trophy: any): number | null {
-  if (!trophy.season) return null
-  return trophy.season.tahun_selesai ?? trophy.season.tahun_mulai ?? null
+  const s = trophySeason(trophy)
+  if (!s) return null
+  return s.tahun_selesai ?? s.tahun_mulai ?? null
 }
 
 // Urutan tetap kategori gelar klub beserta label & ikonnya.
 const kategoriOrder = [
-  { key: 'liga_profesional', label: 'Liga Profesional', icon: 'i-lucide-trophy' },
-  { key: 'liga_amatir', label: 'Liga Perserikatan', icon: 'i-lucide-shield' },
-  { key: 'piala_liga', label: 'Piala Liga', icon: 'i-lucide-medal' },
-  { key: 'kompetisi_pramusim', label: 'Kompetisi Pramusim', icon: 'i-lucide-swords' },
-  { key: 'kompetisi_tidak_resmi', label: 'Kompetisi Tidak Resmi', icon: 'i-lucide-star' }
+  { key: 'liga_profesional', label: 'Liga Profesional', icon: 'i-lucide-trophy', to: '/kompetisi/liga' },
+  { key: 'liga_amatir', label: 'Liga Perserikatan', icon: 'i-lucide-shield', to: '/kompetisi/liga' },
+  { key: 'piala_liga', label: 'Piala Liga', icon: 'i-lucide-medal', to: '/kompetisi/piala-liga' },
+  { key: 'piala_asia', label: 'Piala Asia', icon: 'i-lucide-globe', to: '/kompetisi/piala-asia' },
+  { key: 'kompetisi_pramusim', label: 'Kompetisi Pramusim', icon: 'i-lucide-swords', to: '/kompetisi?kategori=kompetisi_pramusim' },
+  { key: 'kompetisi_tidak_resmi', label: 'Kompetisi Tidak Resmi', icon: 'i-lucide-star', to: '/kompetisi?kategori=kompetisi_tidak_resmi' }
 ]
 
 const clubTrophies = computed(() =>
@@ -52,12 +64,12 @@ const categoryCounts = computed(() => {
 
 const tab = ref('klub')
 const tabItems = [
-  { label: 'Gelar Klub', value: 'klub', icon: 'i-lucide-trophy' },
+  { label: 'Prestasi Klub', value: 'klub', icon: 'i-lucide-trophy' },
   { label: 'Prestasi Individual', value: 'individu', icon: 'i-lucide-user-round' }
 ]
 
 useSeoMeta({
-  title: 'Gelar & Prestasi — Sejarah Persib Bandung',
+  title: 'Prestasi — Sejarah Persib Bandung',
   description: 'Daftar gelar dan prestasi yang diraih Persib Bandung.'
 })
 </script>
@@ -67,7 +79,7 @@ useSeoMeta({
     <UPage>
       <UPageHeader
         headline="Arsip Sejarah"
-        title="Gelar & Prestasi"
+        title="Prestasi"
         description="Rekam jejak juara Persib Bandung di berbagai kompetisi."
       />
 
@@ -99,18 +111,20 @@ useSeoMeta({
             <!-- Kanan: jumlah gelar per kategori + slider tahun -->
             <div>
               <div class="grid gap-3 sm:grid-cols-2">
-                <div
+                <NuxtLink
                   v-for="cat in categoryCounts"
                   :key="cat.key"
-                  class="flex items-center gap-4 rounded-xl border border-default bg-elevated/40 p-4"
+                  :to="cat.to"
+                  class="group flex items-center gap-4 rounded-xl border border-default bg-elevated/40 p-4 transition-colors hover:border-primary/50 hover:bg-elevated"
                   :class="cat.count === 0 ? 'opacity-50' : ''"
                 >
                   <UIcon :name="cat.icon" class="size-7 shrink-0 text-primary" />
-                  <div class="min-w-0">
+                  <div class="min-w-0 flex-1">
                     <div class="text-2xl font-bold leading-none tabular-nums">{{ cat.count }}</div>
                     <div class="mt-1 truncate text-sm text-muted">{{ cat.label }}</div>
                   </div>
-                </div>
+                  <UIcon name="i-lucide-arrow-right" class="size-4 shrink-0 text-muted opacity-0 transition-opacity group-hover:opacity-100" />
+                </NuxtLink>
               </div>
 
               <div class="mt-6">

@@ -358,12 +358,14 @@ async function main() {
       ...collectionMeta('seasons').fields,
       stringField('nama_kompetisi'),
       stringField('hasil_akhir'),
+      stringField('juara', { label: 'Juara musim ini' }),
       intField('posisi_klasemen'),
       intField('tahun_mulai'),
       intField('tahun_selesai'),
       textField('keterangan')
     ]
   })
+  await ensureField('seasons', stringField('juara', { label: 'Juara musim ini' }))
   await dropField('seasons', 'nama_musim')
   await ensureField('seasons', intField('tahun_mulai'))
   await ensureField('seasons', intField('tahun_selesai'))
@@ -371,6 +373,77 @@ async function main() {
   await ensureField('seasons', { field: 'era', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: true } })
   await ensureRelation({ collection: 'seasons', field: 'era', related_collection: 'eras', schema: { on_delete: 'SET NULL' } })
   await ensureForeignKey('seasons', 'era', 'eras', 'SET NULL')
+
+  // 6b. cup_seasons ---------------------------------------------------------
+  // Separate from `seasons` (Liga-only, see PRD): one row per edition of a cup
+  // competition (Piala Liga, Piala Galatama, Copa Indonesia, Piala Indonesia, dst).
+  // `hasil_akhir` is Persib's result in that edition specifically (Juara, Runner-up,
+  // Semifinalis, Fase Grup, dst) — separate from `juara`, the edition's overall champion,
+  // since Persib's own result needs to be filled in/verified per edition later.
+  await ensureCollection({
+    ...collectionMeta('cup_seasons'),
+    fields: [
+      ...collectionMeta('cup_seasons').fields,
+      stringField('nama_kompetisi', { required: true, label: 'Nama kompetisi (Piala Liga, Copa Indonesia, dst)' }),
+      intField('tahun_mulai'),
+      intField('tahun_selesai'),
+      stringField('juara', { label: 'Juara edisi ini (keseluruhan, bukan Persib)' }),
+      stringField('hasil_akhir', { label: 'Hasil akhir Persib di edisi ini' }),
+      textField('keterangan')
+    ]
+  })
+  // cup_seasons pre-existed with a stale seasons-shaped field set from before this
+  // collection had its own schema-as-code definition — ensureCollection only creates
+  // on absence, so reconcile the field set explicitly here.
+  await ensureField('cup_seasons', intField('tahun_mulai'))
+  await ensureField('cup_seasons', intField('tahun_selesai'))
+  await ensureField('cup_seasons', stringField('juara', { label: 'Juara edisi ini (keseluruhan, bukan Persib)' }))
+  await dropField('cup_seasons', 'musim')
+  await dropField('cup_seasons', 'sumber_utama')
+  await ensureField('cup_seasons', { field: 'era', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: true } })
+  await ensureRelation({ collection: 'cup_seasons', field: 'era', related_collection: 'eras', schema: { on_delete: 'SET NULL' } })
+  await ensureForeignKey('cup_seasons', 'era', 'eras', 'SET NULL')
+
+  // 6c. asia_seasons ---------------------------------------------------------
+  // Persib's participation in Asian club competitions (Asian Club Championship,
+  // AFC Champions League, dst). Same shape as cup_seasons: one row per edition,
+  // `juara` is that edition's overall champion, `hasil_akhir` is Persib's own
+  // result in that edition (Juara, Runner-up, Perempat Final, Fase Grup, dst).
+  await ensureCollection({
+    ...collectionMeta('asia_seasons'),
+    fields: [
+      ...collectionMeta('asia_seasons').fields,
+      stringField('nama_kompetisi', { required: true, label: 'Nama kompetisi (Asian Club Championship, AFC Champions League, dst)' }),
+      intField('tahun_mulai'),
+      intField('tahun_selesai'),
+      stringField('juara', { label: 'Juara edisi ini (keseluruhan, bukan Persib)' }),
+      stringField('hasil_akhir', { label: 'Hasil akhir Persib di edisi ini' }),
+      textField('keterangan')
+    ]
+  })
+  await ensureField('asia_seasons', { field: 'era', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: true } })
+  await ensureRelation({ collection: 'asia_seasons', field: 'era', related_collection: 'eras', schema: { on_delete: 'SET NULL' } })
+  await ensureForeignKey('asia_seasons', 'era', 'eras', 'SET NULL')
+
+  // 6d. pramusim_seasons -----------------------------------------------------
+  // Persib's participation in pre-season / friendly tournaments (Piala Presiden,
+  // Trofeo, turnamen pramusim, dst). Same shape as cup_seasons: one row per edition,
+  // `juara` is that edition's overall champion, `hasil_akhir` is Persib's own result.
+  await ensureCollection({
+    ...collectionMeta('pramusim_seasons'),
+    fields: [
+      ...collectionMeta('pramusim_seasons').fields,
+      stringField('nama_kompetisi', { required: true, label: 'Nama kompetisi (Piala Presiden, Trofeo, dst)' }),
+      intField('tahun_mulai'),
+      intField('tahun_selesai'),
+      stringField('juara', { label: 'Juara edisi ini (keseluruhan, bukan Persib)' }),
+      stringField('hasil_akhir', { label: 'Hasil akhir Persib di edisi ini' }),
+      textField('keterangan')
+    ]
+  })
+  await ensureField('pramusim_seasons', { field: 'era', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: true } })
+  await ensureRelation({ collection: 'pramusim_seasons', field: 'era', related_collection: 'eras', schema: { on_delete: 'SET NULL' } })
+  await ensureForeignKey('pramusim_seasons', 'era', 'eras', 'SET NULL')
 
   // 7. matches -----------------------------------------------------------
   await ensureCollection({
@@ -428,6 +501,14 @@ async function main() {
   await ensureField('trophies', { field: 'season', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: true } })
   await ensureRelation({ collection: 'trophies', field: 'season', related_collection: 'seasons', schema: { on_delete: 'SET NULL' } })
   await ensureForeignKey('trophies', 'season', 'seasons', 'SET NULL')
+  // A trophy is won in exactly one competition, but that competition may live in
+  // any of the season collections. Give trophies a nullable m2o to each; the one
+  // that's set determines the trophy's year/kompetisi on the frontend.
+  for (const [field, coll] of [['cup_season', 'cup_seasons'], ['asia_season', 'asia_seasons'], ['pramusim_season', 'pramusim_seasons']]) {
+    await ensureField('trophies', { field, type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: true } })
+    await ensureRelation({ collection: 'trophies', field, related_collection: coll, schema: { on_delete: 'SET NULL' } })
+    await ensureForeignKey('trophies', field, coll, 'SET NULL')
+  }
   await dropField('trophies', 'tahun')
   await dropField('trophies', 'sumber_utama')
   // Kompetisi is now sourced from the related season (seasons.nama_kompetisi),

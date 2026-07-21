@@ -7,7 +7,7 @@ import { api, login } from './lib/directus-client.mjs'
 // collections with a `status` field are restricted to status = published for Public;
 // junction/translation/stat tables have no status field, so they're open (they're only
 // ever reached by joining from an already-published parent).
-const restricted = ['eras', 'coaches', 'players', 'seasons', 'matches', 'trophies', 'stories', 'sources']
+const restricted = ['eras', 'coaches', 'players', 'seasons', 'cup_seasons', 'asia_seasons', 'pramusim_seasons', 'matches', 'trophies', 'stories', 'sources']
 const open = ['languages', 'eras_translations', 'coaches_translations', 'players_translations', 'matches_translations', 'stories_translations', 'player_season_stats', 'directus_files']
 
 async function grantRead(policyId, collection, permissions) {
