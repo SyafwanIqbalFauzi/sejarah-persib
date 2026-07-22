@@ -71,6 +71,23 @@ async function ensureRelation(relation) {
   console.log(`+ created relation ${relation.collection}.${relation.field} -> ${relation.related_collection}`)
 }
 
+// Unlike ensureRelation (create-if-absent), this keeps an already-created relation's
+// `meta` (e.g. one_field, for wiring an o2m alias onto the related collection) in sync.
+async function ensureRelationMeta(collection, field, meta) {
+  const existing = await api(`/relations/${collection}/${field}`).catch(() => null)
+  if (!existing) {
+    console.log(`= relation ${collection}.${field} absent, skipping meta sync`)
+    return
+  }
+  const inSync = Object.entries(meta).every(([k, v]) => existing.data.meta?.[k] === v)
+  if (inSync) {
+    console.log(`= relation ${collection}.${field} meta already in sync, skipping`)
+    return
+  }
+  await api(`/relations/${collection}/${field}`, { method: 'PATCH', body: JSON.stringify({ meta }) })
+  console.log(`~ patched relation ${collection}.${field} meta -> ${JSON.stringify(meta)}`)
+}
+
 
 const pk = (type = 'integer') => ({
   field: 'id',
@@ -326,7 +343,7 @@ async function main() {
     'Korea Selatan', 'Jepang', 'Australia', 'Timor Leste', 'Malaysia', 'Singapura',
     'Curaçao', 'Chad', 'Burkina Faso', 'Maroko', 'Liberia', 'Gabon', 'Tanjung Verde',
     'Polandia', 'Rumania', 'Montenegro', 'Slovenia', 'Thailand', 'Suriah', 'Palestina',
-    'Turkmenistan', 'Filipina', 'Irak', 'Moldova'
+    'Turkmenistan', 'Filipina', 'Irak', 'Moldova', 'Denmark', 'Guadeloupe'
   ]
 
   // 4. coaches -------------------------------------------------------------
@@ -556,19 +573,47 @@ async function main() {
     schema: {},
     fields: [
       pk(),
+      intField('nomor_punggung', 'Nomor punggung'),
       intField('jumlah_laga'),
+      intField('jumlah_menit_bermain', 'Jumlah menit bermain'),
       intField('gol'),
       intField('assist'),
       intField('kartu_kuning'),
       intField('kartu_merah')
     ]
   })
-  await ensureField('player_season_stats', { field: 'player', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: false } })
+  await ensureField('player_season_stats', intField('nomor_punggung', 'Nomor punggung'))
+  await ensureField('player_season_stats', intField('jumlah_menit_bermain', 'Jumlah menit bermain'))
+  await ensureField('player_season_stats', {
+    field: 'player',
+    type: 'integer',
+    meta: { interface: 'select-dropdown-m2o', display: 'related-values', display_options: { template: '{{nama}}' }, options: { template: '{{nama}}' } },
+    schema: { is_nullable: false }
+  })
   await ensureRelation({ collection: 'player_season_stats', field: 'player', related_collection: 'players', schema: { on_delete: 'CASCADE' } })
   await ensureForeignKey('player_season_stats', 'player', 'players', 'CASCADE')
-  await ensureField('player_season_stats', { field: 'season', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: false } })
-  await ensureRelation({ collection: 'player_season_stats', field: 'season', related_collection: 'seasons', schema: { on_delete: 'CASCADE' } })
+  await patchField('player_season_stats', 'player', {
+    meta: { display: 'related-values', display_options: { template: '{{nama}}' }, options: { template: '{{nama}}' } }
+  })
+  await ensureField('player_season_stats', {
+    field: 'season',
+    type: 'integer',
+    meta: { interface: 'select-dropdown-m2o', display: 'related-values', display_options: { template: '{{nama_kompetisi}} {{tahun_mulai}}/{{tahun_selesai}}' }, options: { template: '{{nama_kompetisi}} {{tahun_mulai}}/{{tahun_selesai}}' } },
+    schema: { is_nullable: false }
+  })
+  await patchField('player_season_stats', 'season', {
+    meta: { display: 'related-values', display_options: { template: '{{nama_kompetisi}} {{tahun_mulai}}/{{tahun_selesai}}' }, options: { template: '{{nama_kompetisi}} {{tahun_mulai}}/{{tahun_selesai}}' } }
+  })
+  // one_field wires up seasons.pemain (below) so a season's squad can be managed
+  // as an inline o2m list from the Season edit screen, not just via this collection directly.
+  await ensureRelation({ collection: 'player_season_stats', field: 'season', related_collection: 'seasons', meta: { one_field: 'pemain' }, schema: { on_delete: 'CASCADE' } })
+  await ensureRelationMeta('player_season_stats', 'season', { one_field: 'pemain' })
   await ensureForeignKey('player_season_stats', 'season', 'seasons', 'CASCADE')
+  await ensureField('seasons', {
+    field: 'pemain',
+    type: 'alias',
+    meta: { interface: 'list-o2m', special: ['o2m'], note: 'Skuat pemain musim ini, dengan statistik laga/gol/assist' }
+  })
 
   // 9. trophies ------------------------------------------------------------
   await ensureCollection({

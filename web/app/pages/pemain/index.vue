@@ -6,12 +6,54 @@ const { public: { directusUrl } } = useRuntimeConfig()
 
 const { data: players } = await useAsyncData('players', () => directus.request(
   readItems('players', {
-    fields: ['id', 'slug', 'nama', 'posisi', 'foto', 'negara', 'skuat_musim_ini', { periods: ['tahun_mulai', 'tahun_selesai'] }],
+    fields: ['id', 'slug', 'nama', 'posisi', 'foto', 'negara', { periods: ['tahun_mulai', 'tahun_selesai'] }],
     filter: { status: { _eq: 'published' } },
     sort: ['nama'],
     limit: -1
   })
 ))
+
+const { data: seasons } = await useAsyncData('seasons-for-squad', () => directus.request(
+  readItems('seasons', {
+    fields: ['id', 'nama_kompetisi', 'tahun_mulai', 'tahun_selesai'],
+    filter: { status: { _eq: 'published' } },
+    sort: ['-tahun_mulai', '-tahun_selesai'],
+    limit: -1
+  })
+))
+
+function seasonLabel(season: any) {
+  const rentang = season.tahun_selesai && season.tahun_selesai !== season.tahun_mulai
+    ? `${season.tahun_mulai}/${season.tahun_selesai}`
+    : `${season.tahun_mulai}`
+  return `${season.nama_kompetisi ?? 'Liga'} ${rentang}`
+}
+
+const seasonOptions = computed(() => (seasons.value ?? []).map((s) => ({ label: seasonLabel(s), value: s.id })))
+
+// Terbaru = urutan pertama, karena seasons sudah di-sort desc dari server.
+const selectedSeason = ref<number | null>(null)
+watch(seasons, (val) => {
+  if (selectedSeason.value == null && val?.[0]) selectedSeason.value = val[0].id
+}, { immediate: true })
+
+const { data: squadStats } = await useAsyncData(
+  'squad-stats',
+  () => selectedSeason.value
+    ? directus.request(readItems('player_season_stats', {
+      fields: ['player', 'nomor_punggung', 'jumlah_laga', 'gol', 'assist'],
+      filter: { season: { _eq: selectedSeason.value } },
+      limit: -1
+    }))
+    : Promise.resolve([]),
+  { watch: [selectedSeason] }
+)
+
+const squadByPlayerId = computed(() => {
+  const map = new Map<number, any>()
+  for (const s of squadStats.value ?? []) map.set(s.player, s)
+  return map
+})
 
 function photoUrl(player: any) {
   return player.foto ? `${directusUrl}/assets/${player.foto}?width=420&height=560&fit=cover` : undefined
@@ -94,7 +136,7 @@ function aktifDiRentang(player: any, dari: number | null, sampai: number | null)
 const filteredPlayers = computed(() => {
   let list = players.value ?? []
 
-  if (activeTab.value === 'squad') list = list.filter((p) => p.skuat_musim_ini === true)
+  if (activeTab.value === 'squad') list = list.filter((p) => squadByPlayerId.value.has(p.id))
   if (activeTab.value === 'az') list = list.filter((p) => p.nama?.[0]?.toUpperCase() === activeLetter.value)
 
   const q = search.value.trim().toLowerCase()
@@ -110,6 +152,11 @@ const filteredPlayers = computed(() => {
     if (selectedPosisi.value.length) {
       list = list.filter((p) => p.posisi?.some((pos: string) => selectedPosisi.value.includes(pos)))
     }
+  }
+
+  // Squad: pemain dengan jumlah laga terbanyak tampil lebih dulu.
+  if (activeTab.value === 'squad') {
+    list = [...list].sort((a, b) => (squadByPlayerId.value.get(b.id)?.jumlah_laga ?? 0) - (squadByPlayerId.value.get(a.id)?.jumlah_laga ?? 0))
   }
 
   return list
@@ -191,7 +238,7 @@ useSeoMeta({
           <template #content>
             <div
               class="grid gap-5 border-t border-default/60 p-4 sm:p-5"
-              :class="activeTab === 'squad' ? 'sm:grid-cols-1' : 'sm:grid-cols-4'"
+              :class="activeTab === 'squad' ? 'sm:grid-cols-2' : 'sm:grid-cols-4'"
             >
               <!-- Nama -->
               <div>
@@ -206,6 +253,25 @@ useSeoMeta({
                   v-model="search"
                   icon="i-lucide-search"
                   placeholder="Cari nama pemain..."
+                  class="mt-3 w-full"
+                />
+              </div>
+
+              <!-- Musim (khusus tab Squad) -->
+              <div v-if="activeTab === 'squad'">
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-lucide-calendar" class="size-4 text-muted" />
+                  <span class="text-sm font-medium">Musim</span>
+                </div>
+                <p class="mt-1 text-xs text-dimmed">
+                  Skuad pemain pada musim yang dipilih.
+                </p>
+                <USelectMenu
+                  v-model="selectedSeason"
+                  :items="seasonOptions"
+                  value-key="value"
+                  :disabled="!seasonOptions.length"
+                  :placeholder="seasonOptions.length ? 'Pilih musim...' : 'Belum ada data musim'"
                   class="mt-3 w-full"
                 />
               </div>
@@ -369,10 +435,18 @@ useSeoMeta({
             <!-- Gradient supaya teks terbaca -->
             <div class="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
 
+            <!-- Nomor punggung (khusus tab Squad, pojok atas kanan) -->
+            <div
+              v-if="activeTab === 'squad' && squadByPlayerId.get(player.id)?.nomor_punggung != null"
+              class="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full bg-black/40 text-sm font-bold text-white backdrop-blur-sm"
+            >
+              {{ squadByPlayerId.get(player.id)?.nomor_punggung }}
+            </div>
+
             <!-- Posisi (pojok atas) -->
             <div
               v-if="player.posisi?.length"
-              class="absolute inset-x-3 top-3 flex flex-wrap gap-1"
+              class="absolute inset-x-3 top-3 flex flex-wrap gap-1 pr-10"
             >
               <span
                 v-for="pos in player.posisi"
