@@ -240,7 +240,7 @@ useSeoMeta({
             </template>
 
             <template #keterangan-cell="{ row }">
-              <span class="block min-w-48 whitespace-normal text-muted">{{ row.original.keterangan }}</span>
+              <span class="text-muted">{{ row.original.keterangan }}</span>
             </template>
           </UTable>
 
