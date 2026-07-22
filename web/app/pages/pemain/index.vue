@@ -6,19 +6,33 @@ const { public: { directusUrl } } = useRuntimeConfig()
 
 const { data: players } = await useAsyncData('players', () => directus.request(
   readItems('players', {
-    fields: ['id', 'slug', 'nama', 'posisi', 'foto', 'tahun_aktif_mulai', 'tahun_aktif_selesai', { translations: ['languages_code', 'biodata'] }],
+    fields: ['id', 'slug', 'nama', 'posisi', 'foto', 'negara', 'skuat_musim_ini', { periods: ['tahun_mulai', 'tahun_selesai'] }],
     filter: { status: { _eq: 'published' } },
     sort: ['nama'],
     limit: -1
   })
 ))
 
-function tr(player: any) {
-  return player.translations.find((t: any) => t.languages_code === 'id-ID') ?? player.translations[0]
+function photoUrl(player: any) {
+  return player.foto ? `${directusUrl}/assets/${player.foto}?width=420&height=560&fit=cover` : undefined
 }
 
-function photoUrl(player: any) {
-  return player.foto ? `${directusUrl}/assets/${player.foto}?width=200&height=200&fit=cover` : undefined
+function initials(nama: string) {
+  return (nama ?? '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join('')
+}
+
+// Beberapa pemain sempat pindah lalu kembali ke Persib (lebih dari satu periode aktif).
+function periodeAktif(player: any) {
+  const periods = [...(player.periods ?? [])].sort((a: any, b: any) => (a.tahun_mulai ?? 0) - (b.tahun_mulai ?? 0))
+  if (!periods.length) return '—'
+  return periods
+    .map((p: any) => `${p.tahun_mulai ?? '—'}–${p.tahun_selesai ?? 'sekarang'}`)
+    .join(', ')
 }
 
 const tabItems = [
@@ -26,7 +40,7 @@ const tabItems = [
   { label: 'Semua', value: 'semua' },
   { label: 'A–Z', value: 'az' }
 ]
-const activeTab = ref('squad')
+const activeTab = ref('semua')
 
 const alphabet = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i))
 const activeLetter = ref('A')
@@ -35,19 +49,73 @@ const search = ref('')
 const page = ref(1)
 const itemsPerPage = 12
 
+const tahunDari = ref<number | null>(null)
+const tahunSampai = ref<number | null>(null)
+const selectedNegara = ref<string[]>([])
+const selectedPosisi = ref<string[]>([])
+
+const negaraOptions = computed(() => {
+  const all = (players.value ?? []).flatMap((p) => p.negara ?? [])
+  return [...new Set(all)].sort((a, b) => a.localeCompare(b))
+})
+
+const posisiOptions = computed(() => {
+  const all = (players.value ?? []).flatMap((p) => p.posisi ?? [])
+  return [...new Set(all)].sort((a, b) => a.localeCompare(b))
+})
+
+const hasFilter = computed(() =>
+  search.value.trim() !== '' || tahunDari.value != null || tahunSampai.value != null || selectedNegara.value.length > 0 || selectedPosisi.value.length > 0
+)
+const showFilter = ref(true)
+
+function resetFilter() {
+  search.value = ''
+  tahunDari.value = null
+  tahunSampai.value = null
+  selectedNegara.value = []
+  selectedPosisi.value = []
+}
+
+// Pemain dianggap aktif di tahun tsb jika ada periode yang beririsan dengan rentang filter.
+// tahun_selesai kosong berarti masih aktif hingga sekarang.
+function aktifDiRentang(player: any, dari: number | null, sampai: number | null) {
+  const periods = player.periods ?? []
+  if (!periods.length) return false
+  return periods.some((p: any) => {
+    const mulai = p.tahun_mulai ?? -Infinity
+    const selesai = p.tahun_selesai ?? Infinity
+    const batasDari = dari ?? -Infinity
+    const batasSampai = sampai ?? Infinity
+    return mulai <= batasSampai && selesai >= batasDari
+  })
+}
+
 const filteredPlayers = computed(() => {
   let list = players.value ?? []
 
-  if (activeTab.value === 'squad') list = list.filter((p) => !p.tahun_aktif_selesai)
+  if (activeTab.value === 'squad') list = list.filter((p) => p.skuat_musim_ini === true)
   if (activeTab.value === 'az') list = list.filter((p) => p.nama?.[0]?.toUpperCase() === activeLetter.value)
 
   const q = search.value.trim().toLowerCase()
   if (q) list = list.filter((p) => p.nama?.toLowerCase().includes(q))
 
+  if (activeTab.value !== 'squad') {
+    if (tahunDari.value != null || tahunSampai.value != null) {
+      list = list.filter((p) => aktifDiRentang(p, tahunDari.value, tahunSampai.value))
+    }
+    if (selectedNegara.value.length) {
+      list = list.filter((p) => p.negara?.some((n: string) => selectedNegara.value.includes(n)))
+    }
+    if (selectedPosisi.value.length) {
+      list = list.filter((p) => p.posisi?.some((pos: string) => selectedPosisi.value.includes(pos)))
+    }
+  }
+
   return list
 })
 
-watch([activeTab, activeLetter, search], () => {
+watch([activeTab, activeLetter, search, tahunDari, tahunSampai, selectedNegara, selectedPosisi], () => {
   page.value = 1
 })
 
@@ -74,18 +142,186 @@ useSeoMeta({
       />
 
       <UPageBody>
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <UTabs
-            v-model="activeTab"
-            :items="tabItems"
-          />
-          <UInput
-            v-model="search"
-            icon="i-lucide-search"
-            placeholder="Cari nama pemain..."
-            class="sm:w-64"
-          />
-        </div>
+        <UTabs
+          v-model="activeTab"
+          :items="tabItems"
+        />
+
+        <!-- ===================== FILTER ===================== -->
+        <UCollapsible
+          v-model:open="showFilter"
+          class="mt-4 overflow-hidden rounded-2xl border border-default bg-elevated/30"
+        >
+          <template #default="{ open }">
+            <button
+              type="button"
+              class="flex w-full items-center justify-between gap-3 px-4 py-3 sm:px-5"
+            >
+              <span class="flex items-center gap-2">
+                <UIcon name="i-lucide-sliders-horizontal" class="size-4 text-primary" />
+                <span class="text-sm font-semibold">Filter Pencarian</span>
+                <UBadge
+                  v-if="hasFilter"
+                  color="primary"
+                  variant="subtle"
+                  size="sm"
+                >
+                  Aktif
+                </UBadge>
+              </span>
+              <span class="flex items-center gap-2">
+                <UButton
+                  v-if="hasFilter"
+                  label="Reset semua"
+                  icon="i-lucide-rotate-ccw"
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  @click.stop="resetFilter"
+                />
+                <UIcon
+                  name="i-lucide-chevron-down"
+                  class="size-4 text-muted transition-transform"
+                  :class="open ? 'rotate-180' : ''"
+                />
+              </span>
+            </button>
+          </template>
+
+          <template #content>
+            <div
+              class="grid gap-5 border-t border-default/60 p-4 sm:p-5"
+              :class="activeTab === 'squad' ? 'sm:grid-cols-1' : 'sm:grid-cols-4'"
+            >
+              <!-- Nama -->
+              <div>
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-lucide-search" class="size-4 text-muted" />
+                  <span class="text-sm font-medium">Nama pemain</span>
+                </div>
+                <p class="mt-1 text-xs text-dimmed">
+                  Cari berdasarkan nama pemain.
+                </p>
+                <UInput
+                  v-model="search"
+                  icon="i-lucide-search"
+                  placeholder="Cari nama pemain..."
+                  class="mt-3 w-full"
+                />
+              </div>
+
+              <template v-if="activeTab !== 'squad'">
+              <!-- Rentang tahun -->
+              <div>
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-lucide-calendar-range" class="size-4 text-muted" />
+                  <span class="text-sm font-medium">Rentang tahun aktif</span>
+                </div>
+                <p class="mt-1 text-xs text-dimmed">
+                  Rentang tahun aktif di Persib.
+                </p>
+                <div class="mt-3 flex items-center gap-2">
+                  <UInputNumber
+                    v-model="tahunDari"
+                    placeholder="Dari"
+                    :min="1900"
+                    :max="2100"
+                    :increment="false"
+                    :decrement="false"
+                    :format-options="{ useGrouping: false }"
+                    class="w-full"
+                  />
+                  <UIcon name="i-lucide-arrow-right" class="size-4 shrink-0 text-dimmed" />
+                  <UInputNumber
+                    v-model="tahunSampai"
+                    placeholder="Sampai"
+                    :min="1900"
+                    :max="2100"
+                    :increment="false"
+                    :decrement="false"
+                    :format-options="{ useGrouping: false }"
+                    class="w-full"
+                  />
+                </div>
+              </div>
+
+              <!-- Negara -->
+              <div>
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-lucide-flag" class="size-4 text-muted" />
+                  <span class="text-sm font-medium">Kewarganegaraan</span>
+                  <UBadge
+                    v-if="selectedNegara.length"
+                    color="primary"
+                    variant="subtle"
+                    size="sm"
+                  >
+                    {{ selectedNegara.length }}
+                  </UBadge>
+                </div>
+                <p class="mt-1 text-xs text-dimmed">
+                  Pilih satu atau lebih negara asal pemain.
+                </p>
+                <USelectMenu
+                  v-model="selectedNegara"
+                  :items="negaraOptions"
+                  multiple
+                  :disabled="!negaraOptions.length"
+                  :placeholder="negaraOptions.length ? 'Pilih negara...' : 'Belum ada data negara'"
+                  class="mt-3 w-full"
+                >
+                  <template #item="{ item }">
+                    <UCheckbox
+                      :model-value="selectedNegara.includes(item)"
+                      :label="item"
+                      size="sm"
+                      tabindex="-1"
+                      class="pointer-events-none"
+                    />
+                  </template>
+                </USelectMenu>
+              </div>
+
+              <!-- Posisi -->
+              <div>
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-lucide-shirt" class="size-4 text-muted" />
+                  <span class="text-sm font-medium">Posisi</span>
+                  <UBadge
+                    v-if="selectedPosisi.length"
+                    color="primary"
+                    variant="subtle"
+                    size="sm"
+                  >
+                    {{ selectedPosisi.length }}
+                  </UBadge>
+                </div>
+                <p class="mt-1 text-xs text-dimmed">
+                  Pilih satu atau lebih posisi bermain.
+                </p>
+                <USelectMenu
+                  v-model="selectedPosisi"
+                  :items="posisiOptions"
+                  multiple
+                  :disabled="!posisiOptions.length"
+                  :placeholder="posisiOptions.length ? 'Pilih posisi...' : 'Belum ada data posisi'"
+                  class="mt-3 w-full"
+                >
+                  <template #item="{ item }">
+                    <UCheckbox
+                      :model-value="selectedPosisi.includes(item)"
+                      :label="item"
+                      size="sm"
+                      tabindex="-1"
+                      class="pointer-events-none"
+                    />
+                  </template>
+                </USelectMenu>
+              </div>
+              </template>
+            </div>
+          </template>
+        </UCollapsible>
 
         <div
           v-if="activeTab === 'az'"
@@ -103,43 +339,63 @@ useSeoMeta({
           </UButton>
         </div>
 
-        <UPageGrid class="mt-6">
-          <UPageCard
+        <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div
             v-for="player in pagedPlayers"
             :key="player.id"
-            :title="player.nama"
-            :description="tr(player)?.biodata"
-            spotlight
+            class="group relative aspect-3/4 overflow-hidden rounded-2xl bg-persib-blue-900 shadow-sm ring-1 ring-black/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
           >
-            <template #leading>
+            <!-- Foto pemain (mengisi seluruh kartu) -->
+            <img
+              v-if="photoUrl(player)"
+              :src="photoUrl(player)"
+              :alt="player.nama"
+              class="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
+            >
+            <!-- Placeholder saat belum ada foto -->
+            <div
+              v-else
+              class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-persib-blue-700 to-persib-blue-950"
+            >
               <img
-                v-if="photoUrl(player)"
-                :src="photoUrl(player)"
-                :alt="player.nama"
-                class="size-12 rounded-full object-cover"
+                src="/logo/sejarah-persib-badge-mono.svg"
+                alt=""
+                aria-hidden="true"
+                class="w-2/3 opacity-10"
               >
-              <UIcon
-                v-else
-                name="i-lucide-user"
-                class="size-6"
-              />
-            </template>
+              <span class="absolute text-5xl font-extrabold tracking-tight text-white/25">{{ initials(player.nama) }}</span>
+            </div>
 
-            <template #footer>
-              <div class="flex items-center gap-2 flex-wrap text-sm text-muted">
-                <UBadge
-                  v-for="pos in player.posisi"
-                  :key="pos"
-                  color="primary"
-                  variant="subtle"
-                >
-                  {{ pos }}
-                </UBadge>
-                <span>{{ player.tahun_aktif_mulai }}–{{ player.tahun_aktif_selesai ?? 'sekarang' }}</span>
-              </div>
-            </template>
-          </UPageCard>
-        </UPageGrid>
+            <!-- Gradient supaya teks terbaca -->
+            <div class="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+
+            <!-- Posisi (pojok atas) -->
+            <div
+              v-if="player.posisi?.length"
+              class="absolute inset-x-3 top-3 flex flex-wrap gap-1"
+            >
+              <span
+                v-for="pos in player.posisi"
+                :key="pos"
+                class="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm"
+              >
+                {{ pos }}
+              </span>
+            </div>
+
+            <!-- Nama, negara & periode aktif -->
+            <div class="absolute inset-x-0 bottom-0 p-4">
+              <h3 class="text-lg leading-tight font-bold text-white">{{ player.nama }}</h3>
+              <p
+                v-if="player.negara?.length"
+                class="mt-0.5 text-xs font-medium text-white/60"
+              >
+                {{ player.negara.join(' / ') }}
+              </p>
+              <p class="mt-0.5 text-sm font-medium text-white/75 tabular-nums">{{ periodeAktif(player) }}</p>
+            </div>
+          </div>
+        </div>
 
         <p
           v-if="!pagedPlayers.length"

@@ -34,8 +34,8 @@ const links = [
       { label: 'Liga', to: '/kompetisi/liga' },
       { label: 'Piala Liga', to: '/kompetisi/piala-liga' },
       { label: 'Piala Asia', to: '/kompetisi/piala-asia' },
-      { label: 'Kompetisi Pramusim', to: '/kompetisi?kategori=kompetisi_pramusim' },
-      { label: 'Kompetisi Tidak Resmi', to: '/kompetisi?kategori=kompetisi_tidak_resmi' }
+      { label: 'Pramusim', to: '/kompetisi/pramusim' },
+      { label: 'Tidak Resmi', to: '/kompetisi/tidak-resmi' }
     ]
   },
   { label: 'Pemain', to: '/pemain' },
@@ -100,7 +100,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
                   :key="child.to"
                   :to="child.to"
                   class="block rounded-md px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
-                  @click="kompetisiOpen = false"
+                  @click="() => { kompetisiOpen = false }"
                 >
                   {{ child.label }}
                 </NuxtLink>
@@ -126,7 +126,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
             color="neutral"
             variant="ghost"
             :aria-label="colorMode.value === 'dark' ? 'Pindah ke mode terang' : 'Pindah ke mode gelap'"
-            @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
+            @click="() => { colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark' }"
           />
         </div>
         <UButton
@@ -135,7 +135,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           variant="ghost"
           class="text-white hover:bg-white/10 sm:hidden"
           aria-label="Buka menu navigasi"
-          @click="mobileOpen = true"
+          @click="() => { mobileOpen = true }"
         />
       </div>
     </header>
@@ -151,7 +151,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
                 :key="child.to"
                 :to="child.to"
                 class="block rounded-md px-4 py-2.5 text-sm text-default hover:bg-elevated"
-                @click="mobileOpen = false"
+                @click="() => { mobileOpen = false }"
               >
                 {{ child.label }}
               </NuxtLink>
@@ -161,7 +161,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
               :to="link.to"
               class="rounded-md px-2 py-2.5 text-sm font-semibold"
               :class="isActive(link) ? 'text-primary' : 'text-default hover:bg-elevated'"
-              @click="mobileOpen = false"
+              @click="() => { mobileOpen = false }"
             >
               {{ link.label }}
             </NuxtLink>

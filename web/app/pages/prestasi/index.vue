@@ -10,7 +10,8 @@ const { data: trophies } = await useAsyncData('trophies', () => directus.request
       { season: ['tahun_mulai', 'tahun_selesai', 'nama_kompetisi'] },
       { cup_season: ['tahun_mulai', 'tahun_selesai', 'nama_kompetisi'] },
       { asia_season: ['tahun_mulai', 'tahun_selesai', 'nama_kompetisi'] },
-      { pramusim_season: ['tahun_mulai', 'tahun_selesai', 'nama_kompetisi'] }
+      { pramusim_season: ['tahun_mulai', 'tahun_selesai', 'nama_kompetisi'] },
+      { tidak_resmi_season: ['tahun_mulai', 'tahun_selesai', 'nama_kompetisi'] }
     ],
     filter: { status: { _eq: 'published' } },
     sort: ['-season.tahun_mulai'],
@@ -21,7 +22,7 @@ const { data: trophies } = await useAsyncData('trophies', () => directus.request
 // Sebuah gelar terhubung ke salah satu koleksi season (Liga/Piala/Asia/Pramusim).
 // Tahun diraih = tahun_selesai season terkait (fallback tahun_mulai).
 function trophySeason(trophy: any) {
-  return trophy.season ?? trophy.cup_season ?? trophy.asia_season ?? trophy.pramusim_season ?? null
+  return trophy.season ?? trophy.cup_season ?? trophy.asia_season ?? trophy.pramusim_season ?? trophy.tidak_resmi_season ?? null
 }
 function achievedYear(trophy: any): number | null {
   const s = trophySeason(trophy)
@@ -35,8 +36,8 @@ const kategoriOrder = [
   { key: 'liga_amatir', label: 'Liga Perserikatan', icon: 'i-lucide-shield', to: '/kompetisi/liga' },
   { key: 'piala_liga', label: 'Piala Liga', icon: 'i-lucide-medal', to: '/kompetisi/piala-liga' },
   { key: 'piala_asia', label: 'Piala Asia', icon: 'i-lucide-globe', to: '/kompetisi/piala-asia' },
-  { key: 'kompetisi_pramusim', label: 'Kompetisi Pramusim', icon: 'i-lucide-swords', to: '/kompetisi?kategori=kompetisi_pramusim' },
-  { key: 'kompetisi_tidak_resmi', label: 'Kompetisi Tidak Resmi', icon: 'i-lucide-star', to: '/kompetisi?kategori=kompetisi_tidak_resmi' }
+  { key: 'kompetisi_pramusim', label: 'Kompetisi Pramusim', icon: 'i-lucide-swords', to: '/kompetisi/pramusim' },
+  { key: 'kompetisi_tidak_resmi', label: 'Kompetisi Tidak Resmi', icon: 'i-lucide-star', to: '/kompetisi/tidak-resmi' }
 ]
 
 const clubTrophies = computed(() =>

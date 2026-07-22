@@ -11,7 +11,10 @@ const kategoriLabels: Record<string, string> = {
 
 const kategoriRoutes: Record<string, string> = {
   liga: '/kompetisi/liga',
-  piala_liga: '/kompetisi/piala-liga'
+  piala_liga: '/kompetisi/piala-liga',
+  piala_asia: '/kompetisi/piala-asia',
+  kompetisi_pramusim: '/kompetisi/pramusim',
+  kompetisi_tidak_resmi: '/kompetisi/tidak-resmi'
 }
 
 const route = useRoute()

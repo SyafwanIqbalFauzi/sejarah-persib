@@ -151,6 +151,15 @@ function intField(field, label) {
   return { field, type: 'integer', meta: { interface: 'input', note: label }, schema: { is_nullable: true } }
 }
 
+function radioBooleanField(field, label, choices = [{ text: 'Ya', value: true }, { text: 'Tidak', value: false }]) {
+  return {
+    field,
+    type: 'boolean',
+    meta: { interface: 'select-radio', note: label, options: { choices } },
+    schema: { is_nullable: false, default_value: false }
+  }
+}
+
 function dateField(field, label) {
   return { field, type: 'date', meta: { interface: 'datetime', note: label }, schema: { is_nullable: true } }
 }
@@ -175,6 +184,20 @@ function multiCheckboxField(field, choices, label) {
     type: 'csv',
     meta: {
       interface: 'select-multiple-checkbox',
+      special: ['cast-csv'],
+      note: label,
+      options: { choices: choices.map((c) => ({ text: c, value: c })) }
+    },
+    schema: { is_nullable: true }
+  }
+}
+
+function multiSelectField(field, choices, label) {
+  return {
+    field,
+    type: 'csv',
+    meta: {
+      interface: 'select-multiple-dropdown',
       special: ['cast-csv'],
       note: label,
       options: { choices: choices.map((c) => ({ text: c, value: c })) }
@@ -295,21 +318,50 @@ async function main() {
   await addTranslations('eras', [textField('nama_era', { required: true }), textField('deskripsi', { richText: true })])
   await ensureFieldMeta('eras_translations', 'deskripsi', { interface: 'input-rich-text-html' })
 
+  const negaraChoices = [
+    'Indonesia', 'Brasil', 'Argentina', 'Uruguay', 'Chile', 'Paraguay',
+    'Belanda', 'Kroasia', 'Serbia', 'Bosnia', 'Spanyol', 'Portugal',
+    'Prancis', 'Italia', 'Jerman', 'Belgia', 'Inggris', 'Wales',
+    'Kamerun', 'Nigeria', 'Mali', 'Pantai Gading', 'Ghana', 'Senegal',
+    'Korea Selatan', 'Jepang', 'Australia', 'Timor Leste', 'Malaysia', 'Singapura',
+    'Curaçao', 'Chad', 'Burkina Faso', 'Maroko', 'Liberia', 'Gabon', 'Tanjung Verde',
+    'Polandia', 'Rumania', 'Montenegro', 'Slovenia', 'Thailand', 'Suriah', 'Palestina',
+    'Turkmenistan', 'Filipina', 'Irak', 'Moldova'
+  ]
+
   // 4. coaches -------------------------------------------------------------
   await ensureCollection({
     ...collectionMeta('coaches'),
     fields: [
       ...collectionMeta('coaches').fields,
       stringField('slug', { required: true, unique: true }),
-      stringField('nama', { required: true }),
+      stringField('nama', { required: true })
+    ]
+  })
+  await dropField('coaches', 'periode_mulai')
+  await dropField('coaches', 'periode_selesai')
+  await dropField('coaches', 'sumber_utama')
+  await ensureField('coaches', fileField('foto', 'Foto pelatih').fieldDef)
+  await ensureRelation({ collection: 'coaches', ...fileField('foto').relation })
+  await ensureField('coaches', multiSelectField('negara', negaraChoices, 'Kewarganegaraan'))
+  await patchField('coaches', 'negara', multiSelectField('negara', negaraChoices, 'Kewarganegaraan'))
+  await addTranslations('coaches', [textField('pencapaian')])
+
+  // 4b. coach_periods (multiple spells at Persib per coach, mirrors player_periods) --
+  await ensureCollection({
+    collection: 'coach_periods',
+    meta: { icon: 'date_range' },
+    schema: {},
+    fields: [
+      pk(),
       dateField('periode_mulai'),
       dateField('periode_selesai')
     ]
   })
-  await ensureField('coaches', sourceRef().fieldDef)
-  await ensureRelation({ collection: 'coaches', ...sourceRef().relation })
-  await ensureForeignKey('coaches', 'sumber_utama', 'sources', 'SET NULL')
-  await addTranslations('coaches', [textField('pencapaian')])
+  await ensureField('coach_periods', { field: 'coach', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: false } })
+  await ensureField('coaches', { field: 'periods', type: 'alias', meta: { interface: 'list-o2m', special: ['o2m'] } })
+  await ensureRelation({ collection: 'coach_periods', field: 'coach', related_collection: 'coaches', meta: { one_field: 'periods' }, schema: { on_delete: 'CASCADE' } })
+  await ensureForeignKey('coach_periods', 'coach', 'coaches', 'CASCADE')
 
   // 5. players ---------------------------------------------------------------
   const posisiChoices = [
@@ -331,25 +383,39 @@ async function main() {
       ...collectionMeta('players').fields,
       stringField('slug', { required: true, unique: true }),
       stringField('nama', { required: true }),
-      multiCheckboxField('posisi', posisiChoices),
-      intField('tahun_aktif_mulai'),
-      intField('tahun_aktif_selesai')
+      multiCheckboxField('posisi', posisiChoices)
     ]
   })
-  await ensureField('players', sourceRef().fieldDef)
-  await ensureRelation({ collection: 'players', ...sourceRef().relation })
-  await ensureForeignKey('players', 'sumber_utama', 'sources', 'SET NULL')
   await ensureField('players', fileField('foto', 'Foto pemain').fieldDef)
   await ensureRelation({ collection: 'players', ...fileField('foto').relation })
   await ensureField('players', stringField('nama_lengkap', { label: 'Nama lengkap' }))
   await ensureField('players', stringField('tempat_lahir', { label: 'Tempat lahir' }))
   await ensureField('players', dateField('tanggal_lahir', 'Tanggal lahir'))
+  await ensureField('players', multiSelectField('negara', negaraChoices, 'Kewarganegaraan'))
+  await patchField('players', 'negara', multiSelectField('negara', negaraChoices, 'Kewarganegaraan'))
   await ensureField('players', intField('jumlah_laga', 'Jumlah laga (caps)'))
   await ensureField('players', intField('jumlah_gol', 'Jumlah gol'))
   await ensureField('players', intField('jumlah_assist', 'Jumlah assist'))
+  await ensureField('players', radioBooleanField('skuat_musim_ini', 'Ada di skuat musim ini'))
   await patchField('players', 'posisi', multiCheckboxField('posisi', posisiChoices))
   await addTranslations('players', [textField('biodata', { richText: true })])
   await patchField('players_translations', 'biodata', { meta: { interface: 'input-rich-text-html' } })
+
+  // 5b. player_periods (multiple spells at Persib per player) ----------------
+  await ensureCollection({
+    collection: 'player_periods',
+    meta: { icon: 'date_range' },
+    schema: {},
+    fields: [
+      pk(),
+      intField('tahun_mulai'),
+      intField('tahun_selesai')
+    ]
+  })
+  await ensureField('player_periods', { field: 'player', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: false } })
+  await ensureField('players', { field: 'periods', type: 'alias', meta: { interface: 'list-o2m', special: ['o2m'] } })
+  await ensureRelation({ collection: 'player_periods', field: 'player', related_collection: 'players', meta: { one_field: 'periods' }, schema: { on_delete: 'CASCADE' } })
+  await ensureForeignKey('player_periods', 'player', 'players', 'CASCADE')
 
   // 6. seasons -----------------------------------------------------------
   await ensureCollection({
@@ -445,6 +511,25 @@ async function main() {
   await ensureRelation({ collection: 'pramusim_seasons', field: 'era', related_collection: 'eras', schema: { on_delete: 'SET NULL' } })
   await ensureForeignKey('pramusim_seasons', 'era', 'eras', 'SET NULL')
 
+  // 6e. tidak_resmi_seasons --------------------------------------------------
+  // Persib's participation in unofficial / exhibition competitions (Inlandsche
+  // Stedenwedstrijden, turnamen tidak resmi lain). Same shape as cup_seasons.
+  await ensureCollection({
+    ...collectionMeta('tidak_resmi_seasons'),
+    fields: [
+      ...collectionMeta('tidak_resmi_seasons').fields,
+      stringField('nama_kompetisi', { required: true, label: 'Nama kompetisi tidak resmi' }),
+      intField('tahun_mulai'),
+      intField('tahun_selesai'),
+      stringField('juara', { label: 'Juara edisi ini (keseluruhan, bukan Persib)' }),
+      stringField('hasil_akhir', { label: 'Hasil akhir Persib di edisi ini' }),
+      textField('keterangan')
+    ]
+  })
+  await ensureField('tidak_resmi_seasons', { field: 'era', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: true } })
+  await ensureRelation({ collection: 'tidak_resmi_seasons', field: 'era', related_collection: 'eras', schema: { on_delete: 'SET NULL' } })
+  await ensureForeignKey('tidak_resmi_seasons', 'era', 'eras', 'SET NULL')
+
   // 7. matches -----------------------------------------------------------
   await ensureCollection({
     ...collectionMeta('matches'),
@@ -504,7 +589,7 @@ async function main() {
   // A trophy is won in exactly one competition, but that competition may live in
   // any of the season collections. Give trophies a nullable m2o to each; the one
   // that's set determines the trophy's year/kompetisi on the frontend.
-  for (const [field, coll] of [['cup_season', 'cup_seasons'], ['asia_season', 'asia_seasons'], ['pramusim_season', 'pramusim_seasons']]) {
+  for (const [field, coll] of [['cup_season', 'cup_seasons'], ['asia_season', 'asia_seasons'], ['pramusim_season', 'pramusim_seasons'], ['tidak_resmi_season', 'tidak_resmi_seasons']]) {
     await ensureField('trophies', { field, type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: true } })
     await ensureRelation({ collection: 'trophies', field, related_collection: coll, schema: { on_delete: 'SET NULL' } })
     await ensureForeignKey('trophies', field, coll, 'SET NULL')

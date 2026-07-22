@@ -18,6 +18,13 @@ function periode(row: any) {
 }
 
 const selectedKompetisi = ref<string | 'all'>('all')
+const showFilter = ref(true)
+// Urutan kolom Musim: 'desc' = terbaru dulu (default), 'asc' = terlama dulu.
+const sortDir = ref<'asc' | 'desc'>('desc')
+
+function toggleSort() {
+  sortDir.value = sortDir.value === 'desc' ? 'asc' : 'desc'
+}
 
 const kompetisiOptions = computed(() => [
   { label: 'Semua Kompetisi', value: 'all' as const },
@@ -25,8 +32,13 @@ const kompetisiOptions = computed(() => [
 ])
 
 const filteredRows = computed(() => {
-  if (selectedKompetisi.value === 'all') return cupSeasons.value ?? []
-  return (cupSeasons.value ?? []).filter((r) => r.nama_kompetisi === selectedKompetisi.value)
+  const result = selectedKompetisi.value === 'all'
+    ? (cupSeasons.value ?? [])
+    : (cupSeasons.value ?? []).filter((r) => r.nama_kompetisi === selectedKompetisi.value)
+  return [...result].sort((a, b) => {
+    const diff = (a.tahun_mulai ?? 0) - (b.tahun_mulai ?? 0)
+    return sortDir.value === 'asc' ? diff : -diff
+  })
 })
 
 const columns = [
@@ -63,23 +75,38 @@ useSeoMeta({
 
       <UPageBody>
         <!-- ===================== FILTER ===================== -->
-        <div class="rounded-2xl border border-default bg-elevated/30 p-4 sm:p-5">
-          <div class="flex items-center gap-2">
-            <UIcon name="i-lucide-list-filter" class="size-4 text-muted" />
-            <span class="text-sm font-semibold">Filter berdasarkan kompetisi</span>
-          </div>
-          <div class="mt-3 flex flex-wrap items-center gap-2">
-            <UButton
-              v-for="opt in kompetisiOptions"
-              :key="String(opt.value)"
-              :label="opt.label"
-              size="sm"
-              :color="selectedKompetisi === opt.value ? 'primary' : 'neutral'"
-              :variant="selectedKompetisi === opt.value ? 'solid' : 'subtle'"
-              @click="selectedKompetisi = opt.value"
-            />
-          </div>
-        </div>
+        <UCollapsible v-model:open="showFilter" class="rounded-2xl border border-default bg-elevated/30">
+          <template #default="{ open }">
+            <button
+              type="button"
+              class="flex w-full items-center justify-between gap-2 p-4 sm:px-5"
+            >
+              <span class="flex items-center gap-2">
+                <UIcon name="i-lucide-list-filter" class="size-4 text-muted" />
+                <span class="text-sm font-semibold">Filter berdasarkan kompetisi</span>
+              </span>
+              <UIcon
+                name="i-lucide-chevron-down"
+                class="size-4 text-muted transition-transform"
+                :class="open ? 'rotate-180' : ''"
+              />
+            </button>
+          </template>
+
+          <template #content>
+            <div class="flex flex-wrap items-center gap-2 px-4 pb-4 sm:px-5 sm:pb-5">
+              <UButton
+                v-for="opt in kompetisiOptions"
+                :key="String(opt.value)"
+                :label="opt.label"
+                size="sm"
+                :color="selectedKompetisi === opt.value ? 'primary' : 'neutral'"
+                :variant="selectedKompetisi === opt.value ? 'solid' : 'subtle'"
+                @click="() => { selectedKompetisi = opt.value }"
+              />
+            </div>
+          </template>
+        </UCollapsible>
 
         <!-- ===================== TABEL ===================== -->
         <div class="mt-6 overflow-hidden rounded-2xl border border-default">
@@ -88,6 +115,20 @@ useSeoMeta({
             :columns="columns"
             class="w-full"
           >
+            <template #periode-header>
+              <button
+                type="button"
+                class="-mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 font-semibold transition-colors hover:text-primary"
+                @click="toggleSort"
+              >
+                Musim
+                <UIcon
+                  :name="sortDir === 'asc' ? 'i-lucide-arrow-up-narrow-wide' : 'i-lucide-arrow-down-wide-narrow'"
+                  class="size-3.5 text-muted"
+                />
+              </button>
+            </template>
+
             <template #periode-cell="{ row }">
               <span class="font-medium tabular-nums">{{ row.original.periode }}</span>
             </template>

@@ -10,7 +10,8 @@ const { data: trophies } = await useAsyncData('home-trophies', () => directus.re
       { season: ['tahun_mulai', 'tahun_selesai'] },
       { cup_season: ['tahun_mulai', 'tahun_selesai'] },
       { asia_season: ['tahun_mulai', 'tahun_selesai'] },
-      { pramusim_season: ['tahun_mulai', 'tahun_selesai'] }
+      { pramusim_season: ['tahun_mulai', 'tahun_selesai'] },
+      { tidak_resmi_season: ['tahun_mulai', 'tahun_selesai'] }
     ],
     filter: { status: { _eq: 'published' } },
     limit: -1
@@ -20,7 +21,7 @@ const { data: trophies } = await useAsyncData('home-trophies', () => directus.re
 // Sebuah gelar terhubung ke salah satu koleksi season (Liga/Piala/Asia/Pramusim).
 // Tahun diraih = tahun_selesai season terkait (fallback tahun_mulai).
 function achievedYear(trophy: any): number | null {
-  const s = trophy.season ?? trophy.cup_season ?? trophy.asia_season ?? trophy.pramusim_season ?? null
+  const s = trophy.season ?? trophy.cup_season ?? trophy.asia_season ?? trophy.pramusim_season ?? trophy.tidak_resmi_season ?? null
   if (!s) return null
   return s.tahun_selesai ?? s.tahun_mulai ?? null
 }

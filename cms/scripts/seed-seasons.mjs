@@ -1,4 +1,5 @@
-// Seeds seasons — mirrors the live 'seasons' collection content as of 2026-07-21.
+// Seeds seasons (Liga only) — mirrors the live 'seasons' collection as of 2026-07-21.
+// Kompetisi tidak resmi sudah dipindah ke tidak_resmi_seasons (seed terpisah).
 // Depends on eras already being seeded (matches era by slug via seed-eras.mjs).
 // Idempotent: matches existing rows by (nama_kompetisi, tahun_mulai, tahun_selesai).
 // Run with: node cms/scripts/seed-seasons.mjs
@@ -6,17 +7,6 @@
 import { api, login } from './lib/directus-client.mjs'
 
 const seasons = [
-  {
-    "nama_kompetisi": "Inlandsche Stedenwedstrijden",
-    "hasil_akhir": null,
-    "juara": "VIJ Batavia",
-    "posisi_klasemen": null,
-    "tahun_mulai": 1930,
-    "tahun_selesai": 1930,
-    "keterangan": "Kompetisi tidak resmi",
-    "status": "published",
-    "era_slug": "perserikatan-1931-1994"
-  },
   {
     "nama_kompetisi": "PSSI Stedenwedstrijden",
     "hasil_akhir": null,
@@ -85,7 +75,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "PSSI Stedenwedstrijden",
-    "hasil_akhir": null,
+    "hasil_akhir": "Juara",
     "juara": "PERSIB Bandung",
     "posisi_klasemen": null,
     "tahun_mulai": 1936,
@@ -161,17 +151,6 @@ const seasons = [
     "era_slug": "perserikatan-1931-1994"
   },
   {
-    "nama_kompetisi": "Inlandsche Stedenwedstrijden",
-    "hasil_akhir": null,
-    "juara": "PERSIB Bandung",
-    "posisi_klasemen": null,
-    "tahun_mulai": 1950,
-    "tahun_selesai": 1950,
-    "keterangan": "Kompetisi tidak resmi",
-    "status": "published",
-    "era_slug": "perserikatan-1931-1994"
-  },
-  {
     "nama_kompetisi": "Kejuaraan Nasional PSSI",
     "hasil_akhir": null,
     "juara": "Persibaja Surabaja",
@@ -228,7 +207,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Kejuaraan Nasional PSSI",
-    "hasil_akhir": null,
+    "hasil_akhir": "Juara",
     "juara": "PERSIB Bandung",
     "posisi_klasemen": null,
     "tahun_mulai": 1959,
@@ -382,7 +361,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Divisi Utama PSSI",
-    "hasil_akhir": null,
+    "hasil_akhir": "Juara",
     "juara": "PERSIB Bandung",
     "posisi_klasemen": null,
     "tahun_mulai": 1986,
@@ -415,7 +394,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Divisi Utama PSSI",
-    "hasil_akhir": null,
+    "hasil_akhir": "Juara",
     "juara": "PERSIB Bandung",
     "posisi_klasemen": null,
     "tahun_mulai": 1989,
@@ -437,7 +416,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Divisi Utama PSSI",
-    "hasil_akhir": null,
+    "hasil_akhir": "Juara",
     "juara": "PERSIB Bandung",
     "posisi_klasemen": null,
     "tahun_mulai": 1993,
@@ -448,7 +427,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Liga Dunhill",
-    "hasil_akhir": null,
+    "hasil_akhir": "Juara",
     "juara": "PERSIB Bandung",
     "posisi_klasemen": null,
     "tahun_mulai": 1994,
@@ -459,7 +438,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Liga Dunhill",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 3 (Grup C)",
     "juara": "Mastrans Bandung Raya",
     "posisi_klasemen": null,
     "tahun_mulai": 1995,
@@ -470,7 +449,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Liga Kansas",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 2 (Grup B)",
     "juara": "Persebaya Surabaya",
     "posisi_klasemen": null,
     "tahun_mulai": 1996,
@@ -481,7 +460,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Liga Kansas",
-    "hasil_akhir": null,
+    "hasil_akhir": "Dihentikan",
     "juara": null,
     "posisi_klasemen": null,
     "tahun_mulai": 1997,
@@ -492,7 +471,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Liga Indonesia",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 3 (Grup 2 Wilayah Barat)",
     "juara": "PSIS Semarang",
     "posisi_klasemen": null,
     "tahun_mulai": 1998,
@@ -503,7 +482,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Liga Bank Mandiri",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 8 (Wilayah Barat)",
     "juara": "PSM Makassar",
     "posisi_klasemen": null,
     "tahun_mulai": 1999,
@@ -514,7 +493,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Liga Bank Mandiri",
-    "hasil_akhir": null,
+    "hasil_akhir": "8 Besar",
     "juara": "Persija Jakarta",
     "posisi_klasemen": null,
     "tahun_mulai": 2001,
@@ -525,7 +504,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Liga Bank Mandiri",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 8 (Wilayah Barat)",
     "juara": "Petrokimia Putra",
     "posisi_klasemen": null,
     "tahun_mulai": 2002,
@@ -536,7 +515,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Liga Bank Mandiri",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 16",
     "juara": "Persik Kediri",
     "posisi_klasemen": null,
     "tahun_mulai": 2003,
@@ -547,7 +526,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Liga Bank Mandiri",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 6",
     "juara": "Persebaya Surabaya",
     "posisi_klasemen": null,
     "tahun_mulai": 2004,
@@ -558,7 +537,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Liga Djarum",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 6 (Wilayah Barat)",
     "juara": "Persipura Jayapura",
     "posisi_klasemen": null,
     "tahun_mulai": 2005,
@@ -569,7 +548,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Liga Djarum",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 12 (Wilayah Barat)",
     "juara": "Persik Kediri",
     "posisi_klasemen": null,
     "tahun_mulai": 2006,
@@ -580,7 +559,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Liga Djarum",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 5 (Wilayah Barat)",
     "juara": "Sriwijaya",
     "posisi_klasemen": null,
     "tahun_mulai": 2007,
@@ -591,7 +570,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Indonesia Super League (Djarum ISL)",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 3",
     "juara": "Persipura Jayapura",
     "posisi_klasemen": null,
     "tahun_mulai": 2008,
@@ -602,7 +581,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Indonesia Super League (Djarum ISL)",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 4",
     "juara": "Arema Indonesia",
     "posisi_klasemen": null,
     "tahun_mulai": 2009,
@@ -613,7 +592,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Indonesia Super League (Djarum ISL)",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 7",
     "juara": "Persipura Jayapura",
     "posisi_klasemen": null,
     "tahun_mulai": 2010,
@@ -635,7 +614,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Indonesia Super League",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 8",
     "juara": "Sriwijaya",
     "posisi_klasemen": 8,
     "tahun_mulai": 2011,
@@ -646,7 +625,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Indonesia Super League",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 4",
     "juara": "Persipura Jayapura",
     "posisi_klasemen": 4,
     "tahun_mulai": 2013,
@@ -657,7 +636,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Indonesia Super League",
-    "hasil_akhir": null,
+    "hasil_akhir": "Juara",
     "juara": "PERSIB Bandung",
     "posisi_klasemen": 2,
     "tahun_mulai": 2014,
@@ -668,7 +647,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "QNB League",
-    "hasil_akhir": null,
+    "hasil_akhir": "Dihentikan",
     "juara": null,
     "posisi_klasemen": null,
     "tahun_mulai": 2015,
@@ -678,19 +657,8 @@ const seasons = [
     "era_slug": "indonesia-super-league"
   },
   {
-    "nama_kompetisi": "Indonesia Soccer Championship A (Torabika Soccer Championship)",
-    "hasil_akhir": null,
-    "juara": "Persipura Jayapura",
-    "posisi_klasemen": null,
-    "tahun_mulai": 2016,
-    "tahun_selesai": 2017,
-    "keterangan": "Kompetisi tidak resmi. Kompetisi tidak berafiliasi dengan PSSI, AFC & FIFA.",
-    "status": "published",
-    "era_slug": "indonesia-super-league"
-  },
-  {
     "nama_kompetisi": "GoJek Traveloka Liga 1",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 13",
     "juara": "Bhayangkara",
     "posisi_klasemen": 13,
     "tahun_mulai": 2017,
@@ -701,7 +669,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "GoJek Liga 1",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 4",
     "juara": "Persija Jakarta",
     "posisi_klasemen": 4,
     "tahun_mulai": 2018,
@@ -712,7 +680,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Shopee Liga 1",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 6",
     "juara": "Bali United",
     "posisi_klasemen": 6,
     "tahun_mulai": 2019,
@@ -723,7 +691,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "Shopee Liga 1",
-    "hasil_akhir": null,
+    "hasil_akhir": "Dihentikan",
     "juara": null,
     "posisi_klasemen": null,
     "tahun_mulai": 2020,
@@ -734,7 +702,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "BRI Liga 1",
-    "hasil_akhir": null,
+    "hasil_akhir": "Runner-up",
     "juara": "Bali United",
     "posisi_klasemen": 2,
     "tahun_mulai": 2021,
@@ -745,7 +713,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "BRI Liga 1",
-    "hasil_akhir": null,
+    "hasil_akhir": "Peringkat 3",
     "juara": "PSM Makassar",
     "posisi_klasemen": 3,
     "tahun_mulai": 2022,
@@ -756,7 +724,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "BRI Liga 1",
-    "hasil_akhir": null,
+    "hasil_akhir": "Juara",
     "juara": "PERSIB Bandung",
     "posisi_klasemen": 2,
     "tahun_mulai": 2023,
@@ -767,7 +735,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "BRI Liga 1",
-    "hasil_akhir": null,
+    "hasil_akhir": "Juara",
     "juara": "PERSIB Bandung",
     "posisi_klasemen": 1,
     "tahun_mulai": 2024,
@@ -778,7 +746,7 @@ const seasons = [
   },
   {
     "nama_kompetisi": "BRI Super League",
-    "hasil_akhir": null,
+    "hasil_akhir": "Juara",
     "juara": "PERSIB Bandung",
     "posisi_klasemen": 1,
     "tahun_mulai": 2025,
@@ -809,7 +777,8 @@ async function main() {
     })
     console.log(`+ created season "${fields.nama_kompetisi} ${fields.tahun_mulai}"`)
   }
-  console.log('\nDone seeding seasons.')
+  console.log('
+Done seeding seasons.')
 }
 
 main().catch((err) => {

@@ -36,6 +36,13 @@ function isPersibChampion(juara: string) {
 
 const selectedEra = ref<number | 'all'>('all')
 const onlyJuara = ref(false)
+const showFilter = ref(true)
+// Urutan kolom Musim: 'desc' = musim terbaru dulu (default), 'asc' = terlama dulu.
+const sortDir = ref<'asc' | 'desc'>('desc')
+
+function toggleSort() {
+  sortDir.value = sortDir.value === 'desc' ? 'asc' : 'desc'
+}
 
 const eraOptions = computed(() => [
   { label: 'Semua Era', value: 'all' as const },
@@ -46,7 +53,10 @@ const filteredSeasons = computed(() => {
   let result = seasons.value ?? []
   if (selectedEra.value !== 'all') result = result.filter((s) => s.era === selectedEra.value)
   if (onlyJuara.value) result = result.filter((s) => isPersibChampion(s.juara ?? ''))
-  return result
+  return [...result].sort((a, b) => {
+    const diff = (a.tahun_mulai ?? 0) - (b.tahun_mulai ?? 0)
+    return sortDir.value === 'asc' ? diff : -diff
+  })
 })
 
 // Ringkasan: dihitung dari data terfilter era (bukan filter "hanya juara"),
@@ -70,10 +80,19 @@ const stats = computed(() => [
   { label: 'Rentang tahun', value: rentangTahun.value, icon: 'i-lucide-history' }
 ])
 
+// Hasil Persib di musim itu: pakai teks hasil_akhir bila ada, jika tidak
+// turunkan dari posisi klasemen (mis. "Peringkat 2").
+function hasilPersib(s: any) {
+  if (s.hasil_akhir) return s.hasil_akhir
+  if (s.posisi_klasemen != null) return `Peringkat ${s.posisi_klasemen}`
+  return '—'
+}
+
 const columns = [
   { accessorKey: 'periode', header: 'Musim' },
   { accessorKey: 'era', header: 'Era' },
   { accessorKey: 'nama_kompetisi', header: 'Nama Kompetisi' },
+  { accessorKey: 'hasil_akhir', header: 'Klasemen Persib' },
   { accessorKey: 'juara', header: 'Juara' },
   { accessorKey: 'keterangan', header: 'Keterangan' }
 ]
@@ -83,6 +102,7 @@ const rows = computed(() => filteredSeasons.value.map((s) => ({
   periode: periode(s),
   era: eraLabel(s.era),
   nama_kompetisi: s.nama_kompetisi ?? '—',
+  hasil_akhir: hasilPersib(s),
   juara: s.juara ?? '—',
   posisi_klasemen: s.posisi_klasemen ?? '—',
   keterangan: s.keterangan ?? '—'
@@ -122,39 +142,56 @@ useSeoMeta({
         </div>
 
         <!-- ===================== FILTER ===================== -->
-        <div class="mt-6 rounded-2xl border border-default bg-elevated/30 p-4 sm:p-5">
-          <div class="flex items-center gap-2">
-            <UIcon name="i-lucide-list-filter" class="size-4 text-muted" />
-            <span class="text-sm font-semibold">Filter berdasarkan era</span>
-          </div>
-          <div class="mt-3 flex flex-wrap items-center gap-2">
-            <UButton
-              v-for="opt in eraOptions"
-              :key="String(opt.value)"
-              :label="opt.label"
-              size="sm"
-              :color="selectedEra === opt.value ? 'primary' : 'neutral'"
-              :variant="selectedEra === opt.value ? 'solid' : 'subtle'"
-              @click="selectedEra = opt.value"
-            />
-          </div>
+        <UCollapsible v-model:open="showFilter" class="mt-6 rounded-2xl border border-default bg-elevated/30">
+          <template #default="{ open }">
+            <button
+              type="button"
+              class="flex w-full items-center justify-between gap-2 p-4 sm:px-5"
+            >
+              <span class="flex items-center gap-2">
+                <UIcon name="i-lucide-list-filter" class="size-4 text-muted" />
+                <span class="text-sm font-semibold">Filter berdasarkan era</span>
+              </span>
+              <UIcon
+                name="i-lucide-chevron-down"
+                class="size-4 text-muted transition-transform"
+                :class="open ? 'rotate-180' : ''"
+              />
+            </button>
+          </template>
 
-          <USeparator class="my-4" />
+          <template #content>
+            <div class="px-4 pb-4 sm:px-5 sm:pb-5">
+              <div class="flex flex-wrap items-center gap-2">
+                <UButton
+                  v-for="opt in eraOptions"
+                  :key="String(opt.value)"
+                  :label="opt.label"
+                  size="sm"
+                  :color="selectedEra === opt.value ? 'primary' : 'neutral'"
+                  :variant="selectedEra === opt.value ? 'solid' : 'subtle'"
+                  @click="() => { selectedEra = opt.value }"
+                />
+              </div>
 
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <UButton
-              :label="onlyJuara ? 'Menampilkan musim juara saja' : 'Hanya musim Persib juara'"
-              icon="i-lucide-trophy"
-              size="sm"
-              :color="onlyJuara ? 'primary' : 'neutral'"
-              :variant="onlyJuara ? 'solid' : 'subtle'"
-              @click="onlyJuara = !onlyJuara"
-            />
-            <span class="text-xs text-dimmed tabular-nums">
-              {{ filteredSeasons.length }} musim ditampilkan
-            </span>
-          </div>
-        </div>
+              <USeparator class="my-4" />
+
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <UButton
+                  :label="onlyJuara ? 'Menampilkan musim juara saja' : 'Hanya musim Persib juara'"
+                  icon="i-lucide-trophy"
+                  size="sm"
+                  :color="onlyJuara ? 'primary' : 'neutral'"
+                  :variant="onlyJuara ? 'solid' : 'subtle'"
+                  @click="() => { onlyJuara = !onlyJuara }"
+                />
+                <span class="text-xs text-dimmed tabular-nums">
+                  {{ filteredSeasons.length }} musim ditampilkan
+                </span>
+              </div>
+            </div>
+          </template>
+        </UCollapsible>
 
         <!-- ===================== TABEL ===================== -->
         <div class="mt-6 overflow-hidden rounded-2xl border border-default">
@@ -164,6 +201,20 @@ useSeoMeta({
             :meta="{ class: { tr: (row) => isPersibChampion(row.original.juara) ? 'bg-primary/10 dark:bg-primary/15' : '' } }"
             class="w-full"
           >
+            <template #periode-header>
+              <button
+                type="button"
+                class="-mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 font-semibold transition-colors hover:text-primary"
+                @click="toggleSort"
+              >
+                Musim
+                <UIcon
+                  :name="sortDir === 'asc' ? 'i-lucide-arrow-up-narrow-wide' : 'i-lucide-arrow-down-wide-narrow'"
+                  class="size-3.5 text-muted"
+                />
+              </button>
+            </template>
+
             <template #periode-cell="{ row }">
               <span class="font-medium tabular-nums">{{ row.original.periode }}</span>
             </template>
@@ -172,6 +223,10 @@ useSeoMeta({
               <UBadge color="neutral" variant="subtle" size="sm" class="whitespace-nowrap">
                 {{ row.original.era }}
               </UBadge>
+            </template>
+
+            <template #hasil_akhir-cell="{ row }">
+              <span class="font-medium whitespace-nowrap">{{ row.original.hasil_akhir }}</span>
             </template>
 
             <template #juara-cell="{ row }">
