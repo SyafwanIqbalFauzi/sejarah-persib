@@ -6,7 +6,7 @@ const { public: { directusUrl } } = useRuntimeConfig()
 
 const { data: coaches } = await useAsyncData('coaches', () => directus.request(
   readItems('coaches', {
-    fields: ['id', 'nama', 'foto', 'negara', { periods: ['periode_mulai', 'periode_selesai'] }, { translations: ['languages_code', 'pencapaian'] }],
+    fields: ['id', 'nama', 'foto', 'negara', { periods: ['tahun_mulai', 'tahun_selesai'] }, { translations: ['languages_code', 'pencapaian'] }],
     filter: { status: { _eq: 'published' } },
     limit: -1
   })
@@ -31,12 +31,12 @@ function initials(nama: string) {
 
 // Beberapa pelatih sempat menangani Persib lebih dari satu periode.
 function periode(coach: any) {
-  const periods = [...(coach.periods ?? [])].sort((a: any, b: any) => (a.periode_mulai ?? '').localeCompare(b.periode_mulai ?? ''))
+  const periods = [...(coach.periods ?? [])].sort((a: any, b: any) => (a.tahun_mulai ?? 0) - (b.tahun_mulai ?? 0))
   if (!periods.length) return '—'
   return periods
     .map((p: any) => {
-      const start = p.periode_mulai?.slice(0, 4) ?? '—'
-      const end = p.periode_selesai?.slice(0, 4)
+      const start = p.tahun_mulai ?? '—'
+      const end = p.tahun_selesai
       return end ? `${start}–${end}` : `${start}–sekarang`
     })
     .join(', ')
@@ -67,14 +67,22 @@ function resetFilter() {
   selectedNegara.value = []
 }
 
+// Tahun paling akhir pelatih menjabat — periode masih berjalan (tahun_selesai kosong)
+// dianggap paling baru (Infinity), supaya pelatih aktif saat ini tampil paling atas.
+function tahunTerakhir(coach: any) {
+  const periods = coach.periods ?? []
+  if (!periods.length) return -Infinity
+  return Math.max(...periods.map((p: any) => p.tahun_selesai ?? Infinity))
+}
+
 // Pelatih dianggap aktif di tahun tsb jika ada periode yang beririsan dengan rentang filter.
-// periode_selesai kosong berarti masih menjabat hingga sekarang.
+// tahun_selesai kosong berarti masih menjabat hingga sekarang.
 function aktifDiRentang(coach: any, dari: number | null, sampai: number | null) {
   const periods = coach.periods ?? []
   if (!periods.length) return false
   return periods.some((p: any) => {
-    const mulai = p.periode_mulai ? Number(p.periode_mulai.slice(0, 4)) : -Infinity
-    const selesai = p.periode_selesai ? Number(p.periode_selesai.slice(0, 4)) : Infinity
+    const mulai = p.tahun_mulai ?? -Infinity
+    const selesai = p.tahun_selesai ?? Infinity
     const batasDari = dari ?? -Infinity
     const batasSampai = sampai ?? Infinity
     return mulai <= batasSampai && selesai >= batasDari
@@ -94,7 +102,8 @@ const filteredCoaches = computed(() => {
     list = list.filter((c) => c.negara?.some((n: string) => selectedNegara.value.includes(n)))
   }
 
-  return list
+  // Default: pelatih dengan periode menjabat terbaru tampil paling atas.
+  return [...list].sort((a, b) => tahunTerakhir(b) - tahunTerakhir(a))
 })
 
 watch([search, tahunDari, tahunSampai, selectedNegara], () => {
@@ -194,26 +203,26 @@ useSeoMeta({
                   Cari pelatih yang menangani Persib pada rentang tahun tertentu.
                 </p>
                 <div class="mt-3 flex items-center gap-2">
-                  <UInputNumber
-                    v-model="tahunDari"
+                  <UInput
+                    :model-value="tahunDari != null ? String(tahunDari) : ''"
+                    type="number"
                     placeholder="Dari"
                     :min="1900"
                     :max="2100"
-                    :increment="false"
-                    :decrement="false"
-                    :format-options="{ useGrouping: false }"
                     class="w-full"
+                    :ui="{ base: '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none' }"
+                    @update:model-value="(v: string) => { const n = Number(v); tahunDari = v === '' || Number.isNaN(n) ? null : n }"
                   />
                   <UIcon name="i-lucide-arrow-right" class="size-4 shrink-0 text-dimmed" />
-                  <UInputNumber
-                    v-model="tahunSampai"
+                  <UInput
+                    :model-value="tahunSampai != null ? String(tahunSampai) : ''"
+                    type="number"
                     placeholder="Sampai"
                     :min="1900"
                     :max="2100"
-                    :increment="false"
-                    :decrement="false"
-                    :format-options="{ useGrouping: false }"
                     class="w-full"
+                    :ui="{ base: '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none' }"
+                    @update:model-value="(v: string) => { const n = Number(v); tahunSampai = v === '' || Number.isNaN(n) ? null : n }"
                   />
                 </div>
               </div>

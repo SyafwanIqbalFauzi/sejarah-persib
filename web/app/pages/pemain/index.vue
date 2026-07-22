@@ -22,16 +22,27 @@ const { data: seasons } = await useAsyncData('seasons-for-squad', () => directus
   })
 ))
 
+// Seasons cut short or invalidated for reasons not evident from the data itself.
+const seasonNotes: Record<number, string> = {
+  58: 'Mengundurkan Diri',
+  59: 'Tidak Diakui FIFA',
+  62: 'Liga Batal - Sanksi FIFA',
+  66: 'Liga Batal - Covid19'
+}
+
 function seasonLabel(season: any) {
   const rentang = season.tahun_selesai && season.tahun_selesai !== season.tahun_mulai
     ? `${season.tahun_mulai}/${season.tahun_selesai}`
     : `${season.tahun_mulai}`
-  return `${season.nama_kompetisi ?? 'Liga'} ${rentang}`
+  const label = `${season.nama_kompetisi ?? 'Liga'} ${rentang}`
+  const note = seasonNotes[season.id]
+  return note ? `${label} (${note})` : label
 }
 
 const seasonOptions = computed(() => (seasons.value ?? []).map((s) => ({ label: seasonLabel(s), value: s.id })))
 
 // Terbaru = urutan pertama, karena seasons sudah di-sort desc dari server.
+const defaultSeasonId = computed(() => seasons.value?.[0]?.id ?? null)
 const selectedSeason = ref<number | null>(null)
 watch(seasons, (val) => {
   if (selectedSeason.value == null && val?.[0]) selectedSeason.value = val[0].id
@@ -107,7 +118,12 @@ const posisiOptions = computed(() => {
 })
 
 const hasFilter = computed(() =>
-  search.value.trim() !== '' || tahunDari.value != null || tahunSampai.value != null || selectedNegara.value.length > 0 || selectedPosisi.value.length > 0
+  search.value.trim() !== ''
+  || tahunDari.value != null
+  || tahunSampai.value != null
+  || selectedNegara.value.length > 0
+  || selectedPosisi.value.length > 0
+  || (activeTab.value === 'squad' && selectedSeason.value !== defaultSeasonId.value)
 )
 const showFilter = ref(true)
 
@@ -117,6 +133,7 @@ function resetFilter() {
   tahunSampai.value = null
   selectedNegara.value = []
   selectedPosisi.value = []
+  selectedSeason.value = defaultSeasonId.value
 }
 
 // Pemain dianggap aktif di tahun tsb jika ada periode yang beririsan dengan rentang filter.
@@ -142,12 +159,13 @@ const filteredPlayers = computed(() => {
   const q = search.value.trim().toLowerCase()
   if (q) list = list.filter((p) => p.nama?.toLowerCase().includes(q))
 
+  if (selectedNegara.value.length) {
+    list = list.filter((p) => p.negara?.some((n: string) => selectedNegara.value.includes(n)))
+  }
+
   if (activeTab.value !== 'squad') {
     if (tahunDari.value != null || tahunSampai.value != null) {
       list = list.filter((p) => aktifDiRentang(p, tahunDari.value, tahunSampai.value))
-    }
-    if (selectedNegara.value.length) {
-      list = list.filter((p) => p.negara?.some((n: string) => selectedNegara.value.includes(n)))
     }
     if (selectedPosisi.value.length) {
       list = list.filter((p) => p.posisi?.some((pos: string) => selectedPosisi.value.includes(pos)))
@@ -174,8 +192,8 @@ const pagedPlayers = computed(() => {
 })
 
 useSeoMeta({
-  title: 'Direktori Pemain — Sejarah Persib Bandung',
-  description: 'Direktori pemain Persib Bandung dari berbagai era.'
+  title: 'Daftar Pemain — Sejarah Persib Bandung',
+  description: 'Daftar pemain Persib Bandung dari berbagai era.'
 })
 </script>
 
@@ -184,7 +202,7 @@ useSeoMeta({
     <UPage>
       <UPageHeader
         headline="Arsip Sejarah"
-        title="Direktori Pemain"
+        title="Daftar Pemain"
         description="Pemain-pemain yang membela Persib Bandung dari masa ke masa."
       />
 
@@ -238,25 +256,8 @@ useSeoMeta({
           <template #content>
             <div
               class="grid gap-5 border-t border-default/60 p-4 sm:p-5"
-              :class="activeTab === 'squad' ? 'sm:grid-cols-2' : 'sm:grid-cols-4'"
+              :class="activeTab === 'squad' ? 'sm:grid-cols-3' : 'sm:grid-cols-4'"
             >
-              <!-- Nama -->
-              <div>
-                <div class="flex items-center gap-2">
-                  <UIcon name="i-lucide-search" class="size-4 text-muted" />
-                  <span class="text-sm font-medium">Nama pemain</span>
-                </div>
-                <p class="mt-1 text-xs text-dimmed">
-                  Cari berdasarkan nama pemain.
-                </p>
-                <UInput
-                  v-model="search"
-                  icon="i-lucide-search"
-                  placeholder="Cari nama pemain..."
-                  class="mt-3 w-full"
-                />
-              </div>
-
               <!-- Musim (khusus tab Squad) -->
               <div v-if="activeTab === 'squad'">
                 <div class="flex items-center gap-2">
@@ -273,42 +274,33 @@ useSeoMeta({
                   :disabled="!seasonOptions.length"
                   :placeholder="seasonOptions.length ? 'Pilih musim...' : 'Belum ada data musim'"
                   class="mt-3 w-full"
-                />
+                  :ui="{ itemLabel: 'overflow-hidden whitespace-nowrap [container-type:inline-size]' }"
+                >
+                  <template #item-label="{ item }">
+                    <span
+                      class="inline-block whitespace-nowrap transition-transform duration-[1.6s] ease-linear group-hover:translate-x-[min(0px,calc(100cqw-100%))]"
+                    >
+                      {{ item.label }}
+                    </span>
+                  </template>
+                </USelectMenu>
               </div>
 
-              <template v-if="activeTab !== 'squad'">
-              <!-- Rentang tahun -->
+              <!-- Nama -->
               <div>
                 <div class="flex items-center gap-2">
-                  <UIcon name="i-lucide-calendar-range" class="size-4 text-muted" />
-                  <span class="text-sm font-medium">Rentang tahun aktif</span>
+                  <UIcon name="i-lucide-search" class="size-4 text-muted" />
+                  <span class="text-sm font-medium">Nama pemain</span>
                 </div>
                 <p class="mt-1 text-xs text-dimmed">
-                  Rentang tahun aktif di Persib.
+                  Cari berdasarkan nama pemain.
                 </p>
-                <div class="mt-3 flex items-center gap-2">
-                  <UInputNumber
-                    v-model="tahunDari"
-                    placeholder="Dari"
-                    :min="1900"
-                    :max="2100"
-                    :increment="false"
-                    :decrement="false"
-                    :format-options="{ useGrouping: false }"
-                    class="w-full"
-                  />
-                  <UIcon name="i-lucide-arrow-right" class="size-4 shrink-0 text-dimmed" />
-                  <UInputNumber
-                    v-model="tahunSampai"
-                    placeholder="Sampai"
-                    :min="1900"
-                    :max="2100"
-                    :increment="false"
-                    :decrement="false"
-                    :format-options="{ useGrouping: false }"
-                    class="w-full"
-                  />
-                </div>
+                <UInput
+                  v-model="search"
+                  icon="i-lucide-search"
+                  placeholder="Cari nama pemain..."
+                  class="mt-3 w-full"
+                />
               </div>
 
               <!-- Negara -->
@@ -346,6 +338,41 @@ useSeoMeta({
                     />
                   </template>
                 </USelectMenu>
+              </div>
+
+              <template v-if="activeTab !== 'squad'">
+              <!-- Rentang tahun -->
+              <div>
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-lucide-calendar-range" class="size-4 text-muted" />
+                  <span class="text-sm font-medium">Rentang tahun aktif</span>
+                </div>
+                <p class="mt-1 text-xs text-dimmed">
+                  Rentang tahun aktif di Persib.
+                </p>
+                <div class="mt-3 flex items-center gap-2">
+                  <UInput
+                    :model-value="tahunDari != null ? String(tahunDari) : ''"
+                    type="number"
+                    placeholder="Dari"
+                    :min="1900"
+                    :max="2100"
+                    class="w-full"
+                    :ui="{ base: '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none' }"
+                    @update:model-value="(v: string) => { const n = Number(v); tahunDari = v === '' || Number.isNaN(n) ? null : n }"
+                  />
+                  <UIcon name="i-lucide-arrow-right" class="size-4 shrink-0 text-dimmed" />
+                  <UInput
+                    :model-value="tahunSampai != null ? String(tahunSampai) : ''"
+                    type="number"
+                    placeholder="Sampai"
+                    :min="1900"
+                    :max="2100"
+                    class="w-full"
+                    :ui="{ base: '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none' }"
+                    @update:model-value="(v: string) => { const n = Number(v); tahunSampai = v === '' || Number.isNaN(n) ? null : n }"
+                  />
+                </div>
               </div>
 
               <!-- Posisi -->
