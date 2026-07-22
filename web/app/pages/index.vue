@@ -75,17 +75,18 @@ const cards = [
     icon: '<svg width="24" height="24" viewBox="0 0 34 34"><line x1="3" y1="17" x2="31" y2="17" stroke="#fff" stroke-width="2.5"/><circle cx="7" cy="17" r="3.5" fill="#fff"/><circle cx="17" cy="17" r="3.5" fill="#fff"/><circle cx="27" cy="17" r="3.5" fill="#fff"/></svg>'
   },
   {
-    to: '/kompetisi',
-    title: 'Kompetisi',
-    description: 'Rekap kompetisi yang pernah diikuti, dari liga hingga turnamen tidak resmi.',
-    icon: '<svg width="24" height="24" viewBox="0 0 34 34"><rect x="9" y="9" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.5" transform="rotate(45 17 17)"/></svg>'
-  },
-  {
     to: '/prestasi',
     title: 'Prestasi',
     description: 'Catatan juara dan penghargaan sepanjang perjalanan klub.',
     icon: '<svg width="24" height="24" viewBox="0 0 34 34"><circle cx="17" cy="13" r="9" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M12 21 L9 31 L17 27 L25 31 L22 21" fill="#fff"/></svg>'
   },
+  {
+    to: '/kompetisi',
+    title: 'Kompetisi',
+    description: 'Rekap kompetisi yang pernah diikuti, dari liga hingga turnamen tidak resmi.',
+    icon: '<svg width="24" height="24" viewBox="0 0 34 34"><rect x="9" y="9" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.5" transform="rotate(45 17 17)"/></svg>'
+  },
+  
   {
     to: '/pemain',
     title: 'Pemain',
@@ -97,20 +98,20 @@ const cards = [
     title: 'Pelatih',
     description: 'Tangan dingin di balik taktik dan pencapaian tim.',
     icon: '<svg width="24" height="24" viewBox="0 0 34 34"><circle cx="14" cy="9" r="5" fill="#fff"/><rect x="4" y="17" width="26" height="15" rx="2" fill="none" stroke="#fff" stroke-width="2.5"/><line x1="9" y1="24" x2="25" y2="24" stroke="#fff" stroke-width="2"/></svg>'
-  },
-  
-  {
-    to: '/pertandingan',
-    title: 'Pertandingan Bersejarah',
-    description: 'Laga-laga ikonik yang layak dikenang dan diceritakan ulang.',
-    icon: '<svg width="24" height="24" viewBox="0 0 34 34"><rect x="9" y="9" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.5" transform="rotate(45 17 17)"/></svg>'
-  },
-  {
-    to: '/cerita',
-    title: 'Cerita & Fun Fact',
-    description: 'Kisah ringan dan detail unik seputar sejarah klub.',
-    icon: '<svg width="24" height="24" viewBox="0 0 34 34"><rect x="6" y="5" width="22" height="24" rx="1.5" fill="none" stroke="#fff" stroke-width="2.5"/><line x1="11" y1="12" x2="23" y2="12" stroke="#fff" stroke-width="2"/><line x1="11" y1="18" x2="23" y2="18" stroke="#fff" stroke-width="2"/><line x1="11" y1="24" x2="19" y2="24" stroke="#fff" stroke-width="2"/></svg>'
   }
+  // ,
+  // {
+  //   to: '/pertandingan',
+  //   title: 'Pertandingan Bersejarah',
+  //   description: 'Laga-laga ikonik yang layak dikenang dan diceritakan ulang.',
+  //   icon: '<svg width="24" height="24" viewBox="0 0 34 34"><rect x="9" y="9" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.5" transform="rotate(45 17 17)"/></svg>'
+  // },
+  // {
+  //   to: '/cerita',
+  //   title: 'Cerita & Fun Fact',
+  //   description: 'Kisah ringan dan detail unik seputar sejarah klub.',
+  //   icon: '<svg width="24" height="24" viewBox="0 0 34 34"><rect x="6" y="5" width="22" height="24" rx="1.5" fill="none" stroke="#fff" stroke-width="2.5"/><line x1="11" y1="12" x2="23" y2="12" stroke="#fff" stroke-width="2"/><line x1="11" y1="18" x2="23" y2="18" stroke="#fff" stroke-width="2"/><line x1="11" y1="24" x2="19" y2="24" stroke="#fff" stroke-width="2"/></svg>'
+  // }
 ]
 
 const kategoriOptions = ['Koreksi data sejarah', 'Saran fitur', 'Lainnya']
