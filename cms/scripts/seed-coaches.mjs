@@ -16,8 +16,8 @@ function toSlug(nama) {
 
 function period(mulai, selesai) {
   return {
-    periode_mulai: `${mulai}-01-01`,
-    periode_selesai: selesai == null ? null : `${selesai}-12-31`
+    tahun_mulai: mulai,
+    tahun_selesai: selesai == null ? null : selesai
   }
 }
 
@@ -65,7 +65,7 @@ const coaches = raw.map(([nama, negara, periods]) => ({
 }))
 
 function periodKey(p) {
-  return `${p.periode_mulai}|${p.periode_selesai}`
+  return `${p.tahun_mulai}|${p.tahun_selesai}`
 }
 
 async function main() {
@@ -107,14 +107,14 @@ async function main() {
     for (const p of existingPeriods.data) {
       if (!desiredKeys.has(periodKey(p))) {
         await api(`/items/coach_periods/${p.id}`, { method: 'DELETE' })
-        console.log(`- removed stale period ${coach.slug}: ${p.periode_mulai}–${p.periode_selesai ?? 'sekarang'}`)
+        console.log(`- removed stale period ${coach.slug}: ${p.tahun_mulai}–${p.tahun_selesai ?? 'sekarang'}`)
         periodsRemoved++
       }
     }
     for (const p of coach.periods) {
       if (!existingKeys.has(periodKey(p))) {
         await api('/items/coach_periods', { method: 'POST', body: JSON.stringify({ coach: coachId, ...p }) })
-        console.log(`+ added period ${coach.slug}: ${p.periode_mulai}–${p.periode_selesai ?? 'sekarang'}`)
+        console.log(`+ added period ${coach.slug}: ${p.tahun_mulai}–${p.tahun_selesai ?? 'sekarang'}`)
         periodsAdded++
       }
     }

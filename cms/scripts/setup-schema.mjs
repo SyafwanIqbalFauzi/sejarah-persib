@@ -371,14 +371,18 @@ async function main() {
     schema: {},
     fields: [
       pk(),
-      dateField('periode_mulai'),
-      dateField('periode_selesai')
+      intField('tahun_mulai'),
+      intField('tahun_selesai')
     ]
   })
+  await ensureField('coach_periods', intField('tahun_mulai'))
+  await ensureField('coach_periods', intField('tahun_selesai'))
   await ensureField('coach_periods', { field: 'coach', type: 'integer', meta: { interface: 'select-dropdown-m2o' }, schema: { is_nullable: false } })
   await ensureField('coaches', { field: 'periods', type: 'alias', meta: { interface: 'list-o2m', special: ['o2m'] } })
   await ensureRelation({ collection: 'coach_periods', field: 'coach', related_collection: 'coaches', meta: { one_field: 'periods' }, schema: { on_delete: 'CASCADE' } })
   await ensureForeignKey('coach_periods', 'coach', 'coaches', 'CASCADE')
+  await dropField('coach_periods', 'periode_mulai')
+  await dropField('coach_periods', 'periode_selesai')
 
   // 5. players ---------------------------------------------------------------
   const posisiChoices = [
