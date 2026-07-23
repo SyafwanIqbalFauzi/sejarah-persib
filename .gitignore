@@ -1,6 +1,5 @@
 # Env
 .env
-.env.example
 .env.local
 
 # Node
