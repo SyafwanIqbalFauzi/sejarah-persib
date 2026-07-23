@@ -64,8 +64,7 @@ services:
       STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET}
 
   web:
-    build:
-      context: ./web
+    image: ghcr.io/syafwaniqbalfauzi/sejarah-persib-web:latest
     restart: unless-stopped
     environment:
       NUXT_PUBLIC_DIRECTUS_URL: ${NUXT_PUBLIC_DIRECTUS_URL}
