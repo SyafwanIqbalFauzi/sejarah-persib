@@ -8,7 +8,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 ENV DIRECTUS_INTERNAL_URL=http://directus:8055
-ENV NODE_OPTIONS=--max-old-space-size=2048
+ENV NODE_OPTIONS=--max-old-space-size=8192
 
 RUN pnpm build
 
