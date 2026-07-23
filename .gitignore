@@ -16,6 +16,13 @@ cms/uploads/*
 cms/extensions/*
 !cms/extensions/.gitkeep
 
+# Docs (internal)
+PRD-Sejarah-Persib-Bandung.md
+
+# Scratch data
+tabel.html
+format tabel.html
+
 # OS
 .DS_Store
 Thumbs.db

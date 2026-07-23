@@ -15,12 +15,15 @@ export default defineNuxtConfig({
   routeRules: {
     '/': { prerender: true },
     '/panel': { redirect: '/panel/admin' },
-    '/panel/**': { proxy: 'http://localhost:8055/**' }
+    '/panel/**': { proxy: `${process.env.NUXT_PUBLIC_DIRECTUS_URL || 'http://localhost:8055'}/**` },
+    '/kronologi': { redirect: '/era-ke-era' },
+    '/kronologi/musim': { redirect: '/kompetisi' },
+    '/gelar': { redirect: '/prestasi' }
   },
 
   runtimeConfig: {
     public: {
-      directusUrl: 'http://localhost:8055'
+      directusUrl: process.env.NUXT_PUBLIC_DIRECTUS_URL || 'http://localhost:8055'
     }
   },
 
