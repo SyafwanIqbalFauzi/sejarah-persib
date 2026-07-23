@@ -7,9 +7,8 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-# Dibakukan saat build: proxy /panel/** butuh alamat internal Directus
-# di dalam network Docker Compose (nama service = "directus").
 ENV DIRECTUS_INTERNAL_URL=http://directus:8055
+ENV NODE_OPTIONS=--max-old-space-size=2048
 
 RUN pnpm build
 
