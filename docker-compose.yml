@@ -4,6 +4,8 @@ services:
     restart: unless-stopped
     networks:
       - internal
+    depends_on:
+      - minio
     environment:
       KEY: ${DIRECTUS_KEY}
       SECRET: ${DIRECTUS_SECRET}
@@ -22,15 +24,44 @@ services:
       CORS_ORIGIN: ${DIRECTUS_CORS_ORIGIN}
       STORAGE_LOCATIONS: s3
       STORAGE_S3_DRIVER: s3
-      STORAGE_S3_KEY: ${STORAGE_S3_KEY}
-      STORAGE_S3_SECRET: ${STORAGE_S3_SECRET}
+      STORAGE_S3_KEY: ${MINIO_ROOT_USER}
+      STORAGE_S3_SECRET: ${MINIO_ROOT_PASSWORD}
       STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET}
-      STORAGE_S3_REGION: ${STORAGE_S3_REGION}
-      STORAGE_S3_ENDPOINT: ${STORAGE_S3_ENDPOINT}
+      STORAGE_S3_REGION: us-east-1
+      STORAGE_S3_ENDPOINT: http://minio:9000
       STORAGE_S3_FORCE_PATH_STYLE: "true"
     volumes:
       - ./cms/extensions:/directus/extensions
       - ./cms/snapshots:/directus/snapshots
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - internal
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    networks:
+      - internal
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD; do sleep 1; done;
+      mc mb --ignore-existing local/$$STORAGE_S3_BUCKET;
+      echo 'Bucket ready.';
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET}
 
   web:
     build:
@@ -64,3 +95,4 @@ networks:
 volumes:
   caddy_data:
   caddy_config:
+  minio_data:
