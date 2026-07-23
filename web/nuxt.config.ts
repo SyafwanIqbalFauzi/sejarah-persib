@@ -15,8 +15,7 @@ export default defineNuxtConfig({
   routeRules: {
     '/': { prerender: true },
     '/panel': { redirect: '/panel/admin' },
-    '/panel/**': { proxy: `${process.env.NUXT_PUBLIC_DIRECTUS_URL || 'http://localhost:8055'}/**` },
-    '/kronologi': { redirect: '/era-ke-era' },
+    '/panel/**': { proxy: `${process.env.DIRECTUS_INTERNAL_URL || 'http://localhost:8055'}/**` },    '/kronologi': { redirect: '/era-ke-era' },
     '/kronologi/musim': { redirect: '/kompetisi' },
     '/gelar': { redirect: '/prestasi' }
   },

@@ -2,8 +2,8 @@ services:
   directus:
     image: directus/directus:11
     restart: unless-stopped
-    ports:
-      - "8055:8055"
+    networks:
+      - internal
     environment:
       KEY: ${DIRECTUS_KEY}
       SECRET: ${DIRECTUS_SECRET}
@@ -31,3 +31,36 @@ services:
     volumes:
       - ./cms/extensions:/directus/extensions
       - ./cms/snapshots:/directus/snapshots
+
+  web:
+    build:
+      context: ./web
+    restart: unless-stopped
+    environment:
+      NUXT_PUBLIC_DIRECTUS_URL: ${NUXT_PUBLIC_DIRECTUS_URL}
+    depends_on:
+      - directus
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+    networks:
+      - internal
+
+networks:
+  internal:
+
+volumes:
+  caddy_data:
+  caddy_config:

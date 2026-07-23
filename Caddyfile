@@ -1,0 +1,3 @@
+sejarahpersib.com, www.sejarahpersib.com {
+    reverse_proxy web:3000
+}
