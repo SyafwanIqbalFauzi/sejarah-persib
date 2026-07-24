@@ -7,6 +7,8 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
+ARG NUXT_PUBLIC_DIRECTUS_URL=http://localhost:8055
+ENV NUXT_PUBLIC_DIRECTUS_URL=${NUXT_PUBLIC_DIRECTUS_URL}
 ENV DIRECTUS_INTERNAL_URL=http://directus:8055
 ENV NODE_OPTIONS=--max-old-space-size=8192
 
